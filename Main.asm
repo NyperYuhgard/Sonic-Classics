@@ -281,7 +281,7 @@ loc_280128:                             ; CODE XREF: ROM:0028012A   j
 SC_LoaderMain:                          ; CODE XREF: ROM:00280140   p
                                         ; ROM:002802C0   p
                 ori     #$700,sr
-                move.w  ($FFFFE0).l,d0
+                move.w  (Menu_Text_Index).l,d0
                 add.w   d0,d0
                 add.w   d0,d0
                 lea     Game_Index(pc),a0
