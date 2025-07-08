@@ -21,6 +21,10 @@
 ; Target assembler: 680x0 Assembler in MRI compatible mode
 ; This file should be compiled with "as -M"
 ; ===========================================================================
+; Assembly Options
+; ===========================================================================
+SkipChecksum = 0
+; ===========================================================================
 ; Segment type: Pure code
 ; segment "ROM"
                 dc.l SC_SystemStack
@@ -92,8 +96,12 @@ aCSega1997Jan:  dc.b '(C)SEGA 1997.Jan'
 aSonicCompilati:dc.b 'SONIC COMPILATION                               '
 aSonicCompilati_0:dc.b 'SONIC COMPILATION                               '
 aGmMk119001:    dc.b 'GM MK-1190 -01'
+ if SkipChecksum = 1
+Checksum:       dc.w $0000 
+ else
 Checksum:       dc.w $795A              ; DATA XREF: ROM:SC_CheckSumCheck   r
                                         ; ROM:0028071E   r
+ endif                                        
 Peripherials:   dc.b 'J               '
 RomStart:       dc.l 0
 Rom_End:        dc.l RomEnd-1             ; DATA XREF: ROM:002806FC   r
@@ -264,7 +272,7 @@ loc_280100:                             ; CODE XREF: ROM:00280108   j
                 jmp     SC_GameIndex
 ; ---------------------------------------------------------------------------
 loc_28011C:                             ; CODE XREF: ROM:00280114   j
-                lea     ($FF0000).l,a6
+                lea     (M68K_RAM).l,a6
                 moveq   #0,d6
                 move.w  #$3FFF,d7
 loc_280128:                             ; CODE XREF: ROM:0028012A   j
@@ -304,7 +312,7 @@ Game_Index:     dc.l Load_SC_Menu       ; DATA XREF: ROM:00280164   o
                 dc.l Load_Puyo
 ; ---------------------------------------------------------------------------
 Load_SC_Menu:
-                lea     ($FFFFE0).l,sp
+                lea     (SC_SystemStack).l,sp
                 jmp     SC_GameMenu
 ; ---------------------------------------------------------------------------
                 jmp     SC_H_Int
@@ -312,7 +320,7 @@ Load_SC_Menu:
                 jmp     SC_V_Int
 ; ---------------------------------------------------------------------------
 Load_Puyo:
-                lea     ($FFFC00).l,sp
+                lea     (Puyo_SystemStack).l,sp
                 jmp     Puyo_Data+$200 ; Puyo_EntryPoint
 ; ---------------------------------------------------------------------------
                 jmp     Puyo_Data+$7B4 ; Puyo_H_Int
@@ -320,7 +328,7 @@ Load_Puyo:
                 jmp     Puyo_Data+$54E ; Puyo_V_Int
 ; ---------------------------------------------------------------------------
 Load_S1:
-                lea     ($FFFE00).l,sp ; Sonic 1 System Stack
+                lea     (S1_SystemStack).l,sp ; Sonic 1 System Stack
                 jmp     S1_Data+$200 ; S1_EntryPoint
 ; ---------------------------------------------------------------------------
                 jmp     S1_Data+$10DA ; S1_H_Int
@@ -328,7 +336,7 @@ Load_S1:
                 jmp     S1_Data+$AC4 ; S1_V_Int
 ; ---------------------------------------------------------------------------
 Load_S2:
-                lea     ($FFFE00).l,sp
+                lea     (S2_SystemStack).l,sp ; Sonic 2 System Stack
                 jmp     (S2_Data+6).l ; S2_EntryPoint
 ; ---------------------------------------------------------------------------
                 jmp     (S2_Data+$D1C).l ; S2_H_Int
@@ -354,7 +362,7 @@ SC_GameMenu:                            ; CODE XREF: ROM:002801A2   j
                 bsr.w   Load_Menu_Text
                 andi    #$F8FF,sr
                 jsr     (loc_280932).l
-                move.w  #3,d7
+                move.w  #MusID_SC_Menu_Music,d7
                 jsr     (SC_PlaySound).l
                 lea     ((byte_284252+$2400)).l,a6
                 moveq   #$3F,d7 ; '?'
@@ -365,7 +373,7 @@ loc_280288:                             ; CODE XREF: ROM:0028029A   j
                 bsr.s   loc_2802FE
                 btst    #7,($FFF13C).l  ; If Start Button Pressed?
                 beq.s   loc_280288      ; If Not, Loop
-                move.w  #$41,d7 ; 'A'   ; Play SC_Menu_Start_Sound
+                move.w  #SndID_SC_Select,d7 ; 'A'   ; Play SC_Menu_Start_Sound
                 jsr     (SC_PlaySound).l
                 moveq   #$3C,d7 ; '<'
                 jsr     (loc_280BC2).l
@@ -378,16 +386,16 @@ loc_280288:                             ; CODE XREF: ROM:0028029A   j
 loc_2802CA:                             ; CODE XREF: ROM:0028028E   p
                 btst    #2,($FFF13C).l  ; If Left Button Pressed?
                 beq.s   locret_2802FC   ; If Not
-                move.w  #$45,d7 ; 'E'   ; Play SC_Menu_Bip_Sound
+                move.w  #SndID_SC_Cursor,d7 ; 'E'   ; Play SC_Menu_Bip_Sound
                 jsr     (SC_PlaySound).l
                 bsr.w   loc_2803E4
-                move.w  ($FFFFE0).l,d7
+                move.w  (Menu_Text_Index).l,d7
                 addq.w  #1,d7           ; Add 1 To Index
                 cmpi.w  #6,d7           ; If Index Greater of 5?
                 bmi.s   loc_2802F2      ; If Not
                 moveq   #0,d7           ; Set Index To 0
 loc_2802F2:                             ; CODE XREF: ROM:002802EE   j
-                move.w  d7,($FFFFE0).l
+                move.w  d7,(Menu_Text_Index).l
                 bsr.w   Load_Menu_Text
 locret_2802FC:                          ; CODE XREF: ROM:002802D2   j
                 rts
@@ -395,15 +403,15 @@ locret_2802FC:                          ; CODE XREF: ROM:002802D2   j
 loc_2802FE:                             ; CODE XREF: ROM:00280290   p
                 btst    #3,($FFF13C).l  ; If Right Button Pressed?
                 beq.s   locret_28032C   ; If Not
-                move.w  #$45,d7 ; 'E'   ; Play SC_Menu_Bip_Sound
+                move.w  #SndID_SC_Cursor,d7 ; 'E'   ; Play SC_Menu_Bip_Sound
                 jsr     (SC_PlaySound).l
                 bsr.w   loc_280382
-                move.w  ($FFFFE0).l,d7
+                move.w  (Menu_Text_Index).l,d7
                 subq.w  #1,d7           ; Substract 1 To Index
                 bpl.s   loc_280322
                 moveq   #5,d7           ; Set Index To 5
 loc_280322:                             ; CODE XREF: ROM:0028031E   j
-                move.w  d7,($FFFFE0).l
+                move.w  d7,(Menu_Text_Index).l
                 bsr.w   Load_Menu_Text
 locret_28032C:                          ; CODE XREF: ROM:00280306   j
                 rts
@@ -562,9 +570,17 @@ loc_2804C0:                             ; CODE XREF: ROM:loc_2803B8   p
 byte_2804D4:    dc.b $60, 0, 0, $28, $6C, $36, 0, $FF, $F5, $60, 0, $28
                 dc.b $67, $32, $20, 0, 0, $28, $6A, $56, 0, $FF, $F5, $20
                 dc.b 0, $28, $66, $F2
+                even
+                
 byte_2804F0:    dc.b $40, 0             ; DATA XREF: ROM:002804CA↑r
+                even
+
 byte_2804F2:    dc.b 0, $28, $6B, $46   ; DATA XREF: ROM:002804CE↑r
+                even
+
 byte_2804F6:    dc.b 0, $FF, $F5, $40   ; DATA XREF: ROM:002804B6↑r
+                even
+
 byte_2804FA:    dc.b 0, $28, $67, $12, $60, 0, 0, $28, $6C, $36, 0, $FF
                                         ; DATA XREF: ROM:002804BA↑r
                 dc.b $F5, $60, 0, $28, $67, $32, $20, 0, 0, $28, $6A, $56
@@ -579,10 +595,11 @@ byte_2804FA:    dc.b 0, $28, $67, $12, $60, 0, 0, $28, $6C, $36, 0, $FF
                 dc.b $28, $6B, $46, 0, $FF, $F5, $40, 0, $28, $67, $12
                 dc.b $60, 0, 0, $28, $6C, $36, 0, $FF, $F5, $60, 0, $28
                 dc.b $67, $32
+                even
 ; ---------------------------------------------------------------------------
 Load_Menu_Text:                         ; CODE XREF: ROM:00280262   p
                                         ; ROM:002802F8   p ...
-                move.w  ($FFFFE0).l,d7
+                move.w  (Menu_Text_Index).l,d7
                 add.w   d7,d7
                 add.w   d7,d7
                 movea.l Menu_Text(pc,d7.w),a6
@@ -612,18 +629,22 @@ word_28060A:    dc.w $AC1C              ; DATA XREF: ROM:00280256   o
 aSelectCursor:  dc.b 'SELECT CURSOR - '
 aLeftOrRightBut:dc.b 'LEFT or RIGHT BUTTON                                    '
 aSelectGameStar:dc.b 'SELECT GAME   - START BUTTON        '
+
 byte_280682:    dc.b $C0, 0, 0, $D, 0, $13, 0, 0, 0, $28, $67, $B2, $C0
                                         ; DATA XREF: ROM:0028024A   o
                 dc.b $28, 0, $D, 0, $13, 0, 0, 0, $28, $67, $B2, $C7, 0
                 dc.b 0, $D, 0, $13, 0, 0, 0, $28, $67, $B2, $C7, $28, 0
                 dc.b $D, 0, $13, 0, 0, 0, $28, $67, $B2, $A1, $36, 0, 1
                 dc.b 0, $A, 0, 0, 0, $28, $6A, $2A
+                even
+
 byte_2806BE:    dc.b $AA, $AE, 0, 1, 0, $11, 0, 0, 0, $28, $69, $E2, $A4
                                         ; DATA XREF: ROM:00280468   o
                 dc.b $9A, 0, 9, 0, $B, $20, 0, 0, $28, $6A, $56, $A4, $B4
                 dc.b 0, 9, 0, $B, $40, 0, 0, $28, $6B, $46, $A4, $CE, 0
                 dc.b 9, 0, $B, $60, 0, 0, $28, $6C, $36, 0, 0, $4E, $75
                 dc.b 0, 0, 0, 0
+                even
 ; ---------------------------------------------------------------------------
 SC_CheckSumCheck:                       ; CODE XREF: ROM:00280144   p
                 tst.w   (Checksum).w
@@ -703,6 +724,7 @@ byte_280850:    dc.b $80, 4, $81, $24, $82, $28, $83, $38, $84, 6, $85
                 dc.b $7C, $86, 0, $87, 0, $88, 0, $89, 0, $8A, $3F, $8B
                 dc.b 0, $8C, $81, $8D, $3C, $8E, 0, $8F, 2, $90, $11, $91
                 dc.b 0, $92, 0
+                even
 ; ---------------------------------------------------------------------------
 loc_280876:                             ; CODE XREF: ROM:00282C2A   p
                                         ; ROM:00283166   p
@@ -1759,8 +1781,9 @@ loc_2814AC:                             ; CODE XREF: ROM:00281492   p
                 or.w    d6,(a5)
                 rts
 ; ---------------------------------------------------------------------------
-byte_2814CA:    dc.b 0, $E, 0, $E0, $E, 0
-                                        ; DATA XREF: ROM:loc_28148A   o
+byte_2814CA:    dc.b 0, $E, 0, $E0, $E, 0 ; DATA XREF: ROM:loc_28148A   o
+                even   
+
 byte_2814D0:    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                                         ; DATA XREF: ROM:loc_2813E8   o
                                         ; ROM:loc_282780   o ...
@@ -1771,6 +1794,8 @@ byte_2814D0:    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                 dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                 dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
                 dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0
+                even
+
 byte_281550:    dc.b $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE
                                         ; DATA XREF: ROM:loc_2813E0   o
                                         ; ROM:0028316C   o ...
@@ -1784,6 +1809,7 @@ byte_281550:    dc.b $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE
                 dc.b $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE
                 dc.b $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE
                 dc.b $E, $EE, $E, $EE, $E, $EE, $E, $EE
+                even
 ; ---------------------------------------------------------------------------
 SC_NemDec:                              ; CODE XREF: ROM:0028022E   p
                                         ; ROM:00280244   p ...
@@ -2140,6 +2166,7 @@ word_281854:    dc.w $60D8              ; DATA XREF: ROM:00281828   r
 byte_281856:    dc.b 0, 1, 0, 3, 0, 7, 0, $F, 0, $1F, 0, $3F, 0, $7F, 0
                 dc.b $FF, 1, $FF, 3, $FF, 7, $FF, $F, $FF, $1F, $FF, $3F
                 dc.b $FF, $7F, $FF, $FF, $FF
+                even
 ; ---------------------------------------------------------------------------
 loc_281876:                             ; CODE XREF: ROM:loc_28176E   p
                                         ; ROM:00281850   j
@@ -3047,6 +3074,7 @@ byte_2821DE:    dc.b 0, 3, $30, $33, 0, 1, $10, $11, 0, 2, $20, $22, 0
                 dc.b $11, $1C, $C1, $CC, $11, $1D, $D1, $DD, $11, $1E
                 dc.b $E1, $EE, $11, $1F, $F1, $FF, $FF, $F2, $2F, $22
                 dc.b $FF, $F3, $3F, $33, $FF, $FE, $EF, $EE
+                even
 ; ---------------------------------------------------------------------------
 loc_282262:                             ; CODE XREF: ROM:0028013A   p
                 moveq   #$40,d7 ; '@'
@@ -3590,6 +3618,7 @@ byte_282760:    dc.b 0, 0, 0, 0, 0, $CC, $E, $E4, $C, $C2, 0, $AA, 0, $88
                                         ; DATA XREF: ROM:00282732   o
                 dc.b 4, $44, 0, 0, 2, $22, 4, $44, 6, $66, 8, $88, $A
                 dc.b $AA, $C, $CC, $E, $EE
+                even
 ; ---------------------------------------------------------------------------
 loc_282780:
                 lea     (byte_2814D0).l,a6
@@ -3946,6 +3975,7 @@ unk_282AA2:     dc.b $30 ; 0            ; DATA XREF: ROM:00282A7E   o
                 dc.b $44 ; D
                 dc.b $45 ; E
                 dc.b $46 ; F
+                even
 ; ---------------------------------------------------------------------------
 loc_282AB2:                             ; CODE XREF: ROM:00282A2C   p
                                         ; ROM:00282A40   p ...
@@ -4013,6 +4043,7 @@ byte_282B2E:    dc.b 0, 0, 0, 1, 0, 0, 0, $A, 0, 0, 0, $64, 0, 0, 3, $E8
                                         ; DATA XREF: ROM:00282AE2   o
                 dc.b 0, 0, $27, $10, 0, 1, $86, $A0, 0, $F, $42, $40, 0
                 dc.b $98, $96, $80, 5, $F5, $E1, 0, $3B, $9A, $CA, 0
+                even
 ; ---------------------------------------------------------------------------
 loc_282B56:                             ; CODE XREF: ROM:loc_282B76   p
                                         ; ROM:00282BEA   p
@@ -4170,11 +4201,12 @@ loc_282CD4:                             ; CODE XREF: ROM:00282CBC   j
                 clr.b   ($FF005D).l
                 rts
 ; ---------------------------------------------------------------------------
-byte_282CDC:    dc.b 0, $28, $2D, $BA, 0, 1
-                                        ; DATA XREF: ROM:loc_282C5E   o
-byte_282CE2:    dc.b $A6, $1C, 0, 3, 0, $B, $40, 0, 0, $FF, $E0, 0, 0
-                                        ; DATA XREF: ROM:00282C6A   o
+byte_282CDC:    dc.b 0, $28, $2D, $BA, 0, 1 ; DATA XREF: ROM:loc_282C5E   o
+                even
+
+byte_282CE2:    dc.b $A6, $1C, 0, 3, 0, $B, $40, 0, 0, $FF, $E0, 0, 0 ; DATA XREF: ROM:00282C6A   o                      
                 dc.b 0
+                even
 ; ---------------------------------------------------------------------------
 loc_282CF0:                             ; CODE XREF: ROM:00282C30   p
                 clr.w   ($FFF540).l
@@ -4212,12 +4244,15 @@ locret_282D56:                          ; CODE XREF: ROM:00282D2C   j
                 rts
 ; ---------------------------------------------------------------------------
 byte_282D58:    dc.b 0, $C, 0, 0, $E, $EE ; DATA XREF: ROM:00282CF6   o
+                even
+
 byte_282D5E:    dc.b $E, $C0, $E, $A0, $E, $80, $E, $60, $E, $40, $E, $20
                                         ; DATA XREF: ROM:00282D44   o
                 dc.b $E, 0, $C, 0, $A, 0, 8, 0, 6, 0, 8, 0, $A, 0, $C
                 dc.b 0, $E, 0, $E, $20, $E, $40, $E, $60, $E, $80, $E
                 dc.b $A0, $E, $C0, $E, $A0, $E, $80, $E, $60, $E, $40
                 dc.b $E, $20, $E, 0, $C, 0, $A, 0, 8, 0, 6, 0
+                even
 ; ---------------------------------------------------------------------------
 loc_282D9C:                             ; CODE XREF: ROM:00282C34   p
                 lea     (SC_Sega_Logo).l,a0
@@ -4228,9 +4263,13 @@ loc_282D9C:                             ; CODE XREF: ROM:00282C34   p
                 rts
 ; ---------------------------------------------------------------------------
 byte_282DBA:    dc.b 6, 0, 0, 1, 0, 0, $29, 3, $CF, $F, $F8, 0
-SC_Sega_Logo:   incbin "SC/Art/Nem/SC_Sega_Logo.nem"
-                                        ; DATA XREF: ROM:loc_282D9C   o
+                even
+
+SC_Sega_Logo:   incbin "SC/Art/Nem/SC_Sega_Logo.nem"  ; DATA XREF: ROM:loc_282D9C   o
+                even
+
 byte_283116:    dc.b $14, $44, $42, $40
+                even
 ; ---------------------------------------------------------------------------
 loc_28311A:                             ; CODE XREF: ROM:00282CB8   p
                 move.b  ($FFF13D).l,d7
@@ -4659,6 +4698,7 @@ unk_2834E6:     dc.b $27 ; '
                 dc.b $28 ; (
                 dc.b $35 ; 5
                 dc.b $E2
+                even
 ; ---------------------------------------------------------------------------
 loc_283568:                             ; CODE XREF: ROM:00283578   j
                 move.w  (a0)+,d6
@@ -4700,10 +4740,11 @@ loc_2835CE:                             ; CODE XREF: ROM:002835BE   j
                 movem.l (sp)+,d6-d7/a0
                 rts
 ; ---------------------------------------------------------------------------
-byte_2835D4:    dc.b 0, 1, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 0
-                                        ; DATA XREF: ROM:0028358A   o
-byte_2835E2:    dc.b 0, 5, 0, 4, 0, 3, 0, 2, 0, 1, 0, 1, 0, 0
-                                        ; DATA XREF: ROM:002835B6   o
+byte_2835D4:    dc.b 0, 1, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 0 ; DATA XREF: ROM:0028358A   o
+                even                        
+
+byte_2835E2:    dc.b 0, 5, 0, 4, 0, 3, 0, 2, 0, 1, 0, 1, 0, 0 ; DATA XREF: ROM:002835B6   o
+                even                        
 ; ---------------------------------------------------------------------------
 loc_2835F0:
                 tst.w   d0
@@ -4836,8 +4877,8 @@ loc_283706:                             ; CODE XREF: ROM:0028360E   p
                 beq.s   loc_2837A8
                 bra.s   loc_283778
 ; ---------------------------------------------------------------------------
-byte_283768:    dc.b 0, 1, 2, 0, 4, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0
-                                        ; DATA XREF: ROM:00283760   r
+byte_283768:    dc.b 0, 1, 2, 0, 4, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0 ; DATA XREF: ROM:00283760   r
+                even                        
 ; ---------------------------------------------------------------------------
 loc_283778:                             ; CODE XREF: ROM:00283766   j
                 cmp.b   ($FF4101).l,d3
@@ -4874,13 +4915,16 @@ loc_2837D4:                             ; CODE XREF: ROM:002837D0   j
                 movem.l (sp)+,d3/a0
                 rts
 ; ---------------------------------------------------------------------------
-SC_Font:        incbin "SC/Art/Nem/SC_Font.nem"
-                                        ; DATA XREF: ROM:00280234   o
-                                        ; ROM:loc_28271C   o
-SC_Font_Unused: incbin "SC/Art/Nem/SC_Font_Unused.nem"
-                                        ; DATA XREF: ROM:loc_282714   o
+SC_Font:        incbin "SC/Art/Nem/SC_Font.nem"; DATA XREF: ROM:00280234   o ; ROM:loc_28271C   o                                       
+                even    
+
+SC_Font_Unused: incbin "SC/Art/Nem/SC_Font_Unused.nem" ; DATA XREF: ROM:loc_282714   o
+                even   
+
 byte_284246:    dc.b $22, $3A, $88, $90, $44, $75, $11, $20, $88, $EA
                 dc.b $22, $20
+                even
+
 byte_284252:    dc.b 0, 0, 0, $11, 0, 0, 1, $43, 0, 0, $14, $33, 0, 1
                                         ; DATA XREF: ROM:loc_28274A   o
                 dc.b $43, $33, 0, 1, $33, $34, 0, $14, $33, $41, 0, $13
@@ -5594,6 +5638,8 @@ byte_284252:    dc.b 0, 0, 0, $11, 0, 0, 1, $43, 0, 0, $14, $33, 0, 1
                 dc.b $E, $88, $E, $EE, 6, $66, 6, $64, 6, $44, 8, $68
                 dc.b $A, $8A, $E, $CC, 0, 6, 0, $A, 4, $4A, 2, $6A, 0
                 dc.b $AC, 6, $AC, 0, $48, 2, $22, 0, 0, $E, $EE
+                even
+
 byte_286712:    dc.b 6, $66, 4, 0, 8, $22, $E, $44, 0, $2A, 4, $4E, 0
                 dc.b $26, $A, $A0, $A, $CA, 6, $60, $A, $66, $E, $AA, 4
                 dc.b $6C, 6, $8E, 0, 0, $E, $EE, 6, $66, 8, 0, $E, $40
@@ -5670,6 +5716,8 @@ byte_286712:    dc.b 6, $66, 4, 0, 8, $22, $E, $44, 0, $2A, 4, $4E, 0
                 dc.b 1, $57, 1, $58, 1, $59, 1, $5A, 1, $5B, 1, $5C, 1
                 dc.b $5D, 0, 0, 0, 0, 1, $5E, 1, $5F, 1, $60, 1, $61, 1
                 dc.b $62, 1, $63, 1, $64, 1, $65, 1, $66, 1, $67, 0, 0
+                even 
+
 byte_286B46:    dc.b 0, 0, 1, $68, 1, $69, 1, $6A, 1, $6B, 1, $6B, 1, $6B
                 dc.b 1, $6C, 1, $6D, 1, $6B, 9, $68, 0, 0, 0, 0, 1, $6E
                 dc.b 1, $6F, 1, $70, 1, $71, 1, $72, 1, $73, 1, $74, 1
@@ -5706,8 +5754,11 @@ byte_286B46:    dc.b 0, 0, 1, $68, 1, $69, 1, $6A, 1, $6B, 1, $6B, 1, $6B
                 dc.b $F8, 1, $F9, 1, $FA, 1, $FB, 0, 0, 0, 0, 1, $FC, 1
                 dc.b $FD, 1, $FE, 1, $FF, 2, 0, 2, 1, 2, 2, 2, 3, 2, 4
                 dc.b 2, 5, 0, 0
-SC_GameSelect:  incbin "SC/Art/Nem/SC_GameSelect.nem"
-                                        ; DATA XREF: ROM:0028021E   o
+                even 
+
+SC_GameSelect:  incbin "SC/Art/Nem/SC_GameSelect.nem"  ; DATA XREF: ROM:0028021E   o
+                even
+
 byte_287E2A:    dc.b $F7, $83, $FF, $85, $8C, $31, $2C, $5B, $D0, $98
                 dc.b $94, $B9, $12, $A4, $B9, $12, $C3, $A1, $31, $2F
                 dc.b $DE, $16, $23, $FF, $85, $8A, $62, $13, $15, $8C
@@ -5717,7 +5768,10 @@ byte_287E2A:    dc.b $F7, $83, $FF, $85, $8C, $31, $2C, $5B, $D0, $98
                 dc.b $D7, $EF, $BF, $7B, $FB, $9F, $FE, $8F, $FA, $F, $F9
                 dc.b $7F, $F3, $FB, $D8, $97, $EE, $61, $FB, $D1, $F, $DA
                 dc.b 8, $7F, $49, $3F, $D8, $40, 0
+                even 
+                
 Padding: include "Padding.asm"
+         even
 ; end of 'ROM'
 RomEnd:
                 END SC_EntryPoint

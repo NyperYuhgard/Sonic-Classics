@@ -21,3 +21,14 @@ IO_C_DATA		EQU	$A10007			; I/O port C data port
 IO_A_CTRL		EQU	$A10009			; I/O port A control port
 IO_B_CTRL		EQU	$A1000B			; I/O port B control port
 IO_C_CTRL		EQU	$A1000D			; I/O port C control port
+
+; -------------------------------------------------------------------------------
+; Music ID
+; -------------------------------------------------------------------------------
+MusID_SC_Menu_Music equ 3
+
+; -------------------------------------------------------------------------------
+; Sound ID
+; -------------------------------------------------------------------------------
+SndID_SC_Select equ $41
+SndID_SC_Cursor equ $45

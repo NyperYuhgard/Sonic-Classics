@@ -8,7 +8,12 @@ RAM_END			EQU	$1000000		; Work RAM end
 ; ---------- ram names -------------
 	rsset	RAM_START
 M68K_RAM           equ RAM_START
-                   rs.b $FFE0
+                   rs.b $FC00
+Puyo_SystemStack   rs.b 1 ; $FFFC00  
+                   rs.b $1FF
+S1_SystemStack     rs.b 1
+S2_SystemStack     equ S1_SystemStack                      
+                   rs.b $1DF             
 Menu_Text_Index    rs.b 1 ; $FFFFE0
 SC_SystemStack     equ Menu_Text_Index 
                    rs.b 7
