@@ -23,7 +23,7 @@
 ; ===========================================================================
 ; Segment type: Pure code
 ; segment "ROM"
-                dc.l $FFFFE0
+                dc.l SC_SystemStack
                 dc.l SC_EntryPoint
                 dc.l S2_Data
                 dc.l S2_Data
@@ -51,9 +51,9 @@
                 dc.l S2_Data
                 dc.l Ext
                 dc.l S2_Data
-                dc.l $FFFFF4
+                dc.l HBLANK
                 dc.l S2_Data
-                dc.l $FFFFFA
+                dc.l VBLANK
                 dc.l S2_Data
                 dc.l S2_Data
                 dc.l S2_Data
@@ -96,9 +96,9 @@ Checksum:       dc.w $795A              ; DATA XREF: ROM:SC_CheckSumCheck   r
                                         ; ROM:0028071E   r
 Peripherials:   dc.b 'J               '
 RomStart:       dc.l 0
-Rom_End:        dc.l RomEnd             ; DATA XREF: ROM:002806FC   r
-RamStart:       dc.l $FF0000
-RamEnd:         dc.l $FFFFFF
+Rom_End:        dc.l RomEnd-1             ; DATA XREF: ROM:002806FC   r
+RamStart:       dc.l M68K_RAM
+RamEnd:         dc.l M68K_RAM_END
 SramCode:       dc.b $20, $20, $20, $20, $20, $20, $20, $20, $20, $20
                 dc.b $20, $20
 ModemCode:      dc.b $20, $20, $20, $20, $20, $20, $20, $20, $20, $20
@@ -113,9 +113,9 @@ Puyo_Data: incbin "SC/Puyo_Data.bin"
 S1_Data:   incbin "SC/S1_Data.bin"
 ; ===========================================================================
 SC_EntryPoint:
-                tst.l   ($A10008).l
+                tst.l   (IO_CT1_CTRL).l
                 bne.s   loc_28000E
-                tst.w   ($A1000C).l
+                tst.w   (IO_EXT_CTRL).l
 loc_28000E:                             ; CODE XREF: ROM:00280006   j
                 bne.s   loc_28008C
                 lea     word_28008E(pc),a5
@@ -177,11 +177,11 @@ loc_28008C:                             ; CODE XREF: ROM:loc_28000E   j
 word_28008E:    dc.w $8000              ; DATA XREF: ROM:00280010   o
                 dc.w $3FFF
                 dc.w $100
-                dc.l $A00000
-                dc.l $A11100
-                dc.l $A11200
-                dc.l $C00000
-                dc.l $C00004
+                dc.l Z80_RAM
+                dc.l Z80_BUS
+                dc.l Z80_RESET
+                dc.l VDP_DATA
+                dc.l VDP_CTRL
                 dc.b 4
                 dc.b $14
                 dc.b $30 ; 0
@@ -255,13 +255,13 @@ word_28008E:    dc.w $8000              ; DATA XREF: ROM:00280010   o
                 dc.b $FF
 ; ---------------------------------------------------------------------------
 SC_GameProgram:                         ; CODE XREF: ROM:loc_28008C   j
-                tst.w   ($C00004).l
+                tst.w   (VDP_CTRL).l
 loc_280100:                             ; CODE XREF: ROM:00280108   j
                 btst    #1,($C00005).l
                 bne.s   loc_280100
                 cmpi.l  #'SEGA',($FFFFE4).l
                 bne.s   loc_28011C
-                jmp     $FFFFE8
+                jmp     SC_GameIndex
 ; ---------------------------------------------------------------------------
 loc_28011C:                             ; CODE XREF: ROM:00280114   j
                 lea     ($FF0000).l,a6
@@ -276,7 +276,7 @@ loc_280128:                             ; CODE XREF: ROM:0028012A   j
                 bsr.w   SC_LoaderMain
                 jsr     (SC_CheckSumCheck).l
                 jsr     (loc_28073A).l
-                jmp     $FFFFE8
+                jmp     SC_GameIndex
 ; ---------------------------------------------------------------------------
 SC_LoaderMain:                          ; CODE XREF: ROM:00280140   p
                                         ; ROM:002802C0   p
@@ -286,7 +286,7 @@ SC_LoaderMain:                          ; CODE XREF: ROM:00280140   p
                 add.w   d0,d0
                 lea     Game_Index(pc),a0
                 movea.l (a0,d0.w),a0
-                lea     ($FFFFE8).l,a1
+                lea     (SC_GameIndex).l,a1
                 move.l  (a0)+,(a1)+
                 move.l  (a0)+,(a1)+
                 move.l  (a0)+,(a1)+
@@ -339,13 +339,13 @@ SC_GameMenu:                            ; CODE XREF: ROM:002801A2   j
                 jsr     (loc_282C06).l
                 ori     #$700,sr
                 jsr     (loc_280830).l
-                move.l  #$70000003,($C00004).l
-                move.w  #$FFA0,($C00000).l
+                move.l  #$70000003,(VDP_CTRL).l
+                move.w  #$FFA0,(VDP_DATA).l
                 lea     (SC_GameSelect).l,a0
-                move.l  #$60000000,($C00004).l
+                move.l  #$60000000,(VDP_CTRL).l
                 jsr     (SC_NemDec).l
                 lea     (SC_Font).l,a0
-                move.l  #$44000000,($C00004).l
+                move.l  #$44000000,(VDP_CTRL).l
                 jsr     (SC_NemDec).l
                 lea     (byte_280682).l,a5
                 jsr     (loc_2809E0).l
@@ -373,7 +373,7 @@ loc_280288:                             ; CODE XREF: ROM:0028029A   j
                 jsr     (loc_2813E8).l
                 addq.w  #1,($FFFFE0).l
                 bsr.w   SC_LoaderMain
-                jmp     $FFFFE8
+                jmp     SC_GameIndex
 ; ---------------------------------------------------------------------------
 loc_2802CA:                             ; CODE XREF: ROM:0028028E   p
                 btst    #2,($FFF13C).l  ; If Left Button Pressed?
@@ -547,190 +547,38 @@ loc_2804AC:                             ; CODE XREF: ROM:loc_28032E   p
                                         ; ROM:loc_28034C   p ...
                 add.w   ($FFFFE0).l,d7
                 muls.w  #$E,d7
-                movea.l dword_2804F6(pc,d7.w),a1
-                movea.l off_2804FA(pc,d7.w),a0
+                movea.l byte_2804F6(pc,d7.w),a1
+                movea.l byte_2804FA(pc,d7.w),a0
                 rts
 ; ---------------------------------------------------------------------------
 loc_2804C0:                             ; CODE XREF: ROM:loc_2803B8   p
                                         ; ROM:loc_28041A   p
                 add.w   ($FFFFE0).l,d7
                 muls.w  #$E,d7
-                move.w  word_2804F0(pc,d7.w),d4
-                movea.l off_2804F2(pc,d7.w),a6
+                move.w  byte_2804F0(pc,d7.w),d4
+                movea.l byte_2804F2(pc,d7.w),a6
                 rts
 ; ---------------------------------------------------------------------------
-                dc.b $60 ; `
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6C ; l
-                dc.b $36 ; 6
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $60 ; `
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $67 ; g
-                dc.b $32 ; 2
-                dc.b $20
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6A ; j
-                dc.b $56 ; V
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $20
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $66 ; f
-                dc.b $F2
-word_2804F0:    dc.w $4000              ; DATA XREF: ROM:002804CA   r
-off_2804F2:     dc.l byte_286B46        ; DATA XREF: ROM:002804CE   r
-dword_2804F6:   dc.l $FFF540            ; DATA XREF: ROM:002804B6   r
-off_2804FA:     dc.l byte_286712        ; DATA XREF: ROM:002804BA   r
-                dc.b $60
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6C ; l
-                dc.b $36 ; 6
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $60 ; `
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $67 ; g
-                dc.b $32 ; 2
-                dc.b $20
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6A ; j
-                dc.b $56 ; V
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $20
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $66 ; f
-                dc.b $F2
-                dc.b $40 ; @
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6B ; k
-                dc.b $46 ; F
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $40 ; @
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $67 ; g
-                dc.b $12
-                dc.b $60 ; `
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6C ; l
-                dc.b $36 ; 6
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $60 ; `
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $67 ; g
-                dc.b $32 ; 2
-                dc.b $20
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6A ; j
-                dc.b $56 ; V
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $20
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $66 ; f
-                dc.b $F2
-                dc.b $40 ; @
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6B ; k
-                dc.b $46 ; F
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $40 ; @
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $67 ; g
-                dc.b $12
-                dc.b $60 ; `
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6C ; l
-                dc.b $36 ; 6
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $60 ; `
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $67 ; g
-                dc.b $32 ; 2
-                dc.b $20
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6A ; j
-                dc.b $56 ; V
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $20
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $66 ; f
-                dc.b $F2
-                dc.b $40 ; @
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6B ; k
-                dc.b $46 ; F
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $40 ; @
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $67 ; g
-                dc.b $12
-                dc.b $60 ; `
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $6C ; l
-                dc.b $36 ; 6
-                dc.b   0
-                dc.b $FF
-                dc.b $F5
-                dc.b $60 ; `
-                dc.b   0
-                dc.b $28 ; (
-                dc.b $67 ; g
-                dc.b $32 ; 2
+byte_2804D4:    dc.b $60, 0, 0, $28, $6C, $36, 0, $FF, $F5, $60, 0, $28
+                dc.b $67, $32, $20, 0, 0, $28, $6A, $56, 0, $FF, $F5, $20
+                dc.b 0, $28, $66, $F2
+byte_2804F0:    dc.b $40, 0             ; DATA XREF: ROM:002804CA↑r
+byte_2804F2:    dc.b 0, $28, $6B, $46   ; DATA XREF: ROM:002804CE↑r
+byte_2804F6:    dc.b 0, $FF, $F5, $40   ; DATA XREF: ROM:002804B6↑r
+byte_2804FA:    dc.b 0, $28, $67, $12, $60, 0, 0, $28, $6C, $36, 0, $FF
+                                        ; DATA XREF: ROM:002804BA↑r
+                dc.b $F5, $60, 0, $28, $67, $32, $20, 0, 0, $28, $6A, $56
+                dc.b 0, $FF, $F5, $20, 0, $28, $66, $F2, $40, 0, 0, $28
+                dc.b $6B, $46, 0, $FF, $F5, $40, 0, $28, $67, $12, $60
+                dc.b 0, 0, $28, $6C, $36, 0, $FF, $F5, $60, 0, $28, $67
+                dc.b $32, $20, 0, 0, $28, $6A, $56, 0, $FF, $F5, $20, 0
+                dc.b $28, $66, $F2, $40, 0, 0, $28, $6B, $46, 0, $FF, $F5
+                dc.b $40, 0, $28, $67, $12, $60, 0, 0, $28, $6C, $36, 0
+                dc.b $FF, $F5, $60, 0, $28, $67, $32, $20, 0, 0, $28, $6A
+                dc.b $56, 0, $FF, $F5, $20, 0, $28, $66, $F2, $40, 0, 0
+                dc.b $28, $6B, $46, 0, $FF, $F5, $40, 0, $28, $67, $12
+                dc.b $60, 0, 0, $28, $6C, $36, 0, $FF, $F5, $60, 0, $28
+                dc.b $67, $32
 ; ---------------------------------------------------------------------------
 Load_Menu_Text:                         ; CODE XREF: ROM:00280262   p
                                         ; ROM:002802F8   p ...
@@ -797,8 +645,8 @@ SC_CheckSumLoop:                        ; CODE XREF: ROM:00280716   j
                 cmp.w   (Checksum).w,d0
                 beq.s   SC_CheckSumOk
 SC_CheckSumFail:                        ; CODE XREF: ROM:00280736   j
-                move.l  #$C0000000,($C00004).l
-                move.w  #$E,($C00000).l
+                move.l  #$C0000000,(VDP_CTRL).l
+                move.w  #$E,(VDP_DATA).l
                 bra.s   SC_CheckSumFail
 ; ---------------------------------------------------------------------------
 SC_CheckSumOk:                          ; CODE XREF: ROM:002806FA   j
@@ -806,7 +654,7 @@ SC_CheckSumOk:                          ; CODE XREF: ROM:002806FA   j
                 rts
 ; ---------------------------------------------------------------------------
 loc_28073A:                             ; CODE XREF: ROM:0028014A   p
-                move.b  ($A10001).l,d7
+                move.b  (HW_VERSION).l,d7
                 andi.b  #$C0,d7
                 move.b  d7,($FFF18A).l
                 btst    #6,d7
@@ -818,7 +666,7 @@ loc_28073A:                             ; CODE XREF: ROM:0028014A   p
 loc_28075C:
                 jsr     (loc_280830).l
                 jsr     (loc_28271C).l
-                lea     (unk_280788).l,a5
+                lea     (word_280788).l,a5
                 jsr     (loc_280A8E).l
                 jsr     (loc_280B8E).l
                 jsr     (loc_280932).l
@@ -826,18 +674,12 @@ loc_28075C:
 loc_280786:                             ; CODE XREF: ROM:loc_280786   j
                 bra.s   loc_280786
 ; ---------------------------------------------------------------------------
-unk_280788:     dc.b $A5                ; DATA XREF: ROM:00280768   o
-                dc.b   8
-                dc.b   0
-                dc.b   4
-                dc.b   0
-                dc.b $1E
-                dc.b $60 ; `
-                dc.b   0
-                dc.b   0
-                dc.b $28 ; (
-                dc.b   7
-                dc.b $94
+word_280788:    dc.w $A508              ; DATA XREF: ROM:00280768↑o
+                dc.w 4
+                dc.w $1E
+                dc.w $6000
+                dc.w $28
+                dc.w $794
 aDevelopedForUs:dc.b '  DEVELOPED FOR USE ONLY WITH                                 '
 aPalAndFrenchSe:dc.b 'PAL AND FRENCH SECAM MEGA DRIVE                                '
                 dc.b '           '
@@ -846,9 +688,9 @@ aSystems:       dc.b 'SYSTEMS.           '
 ; ---------------------------------------------------------------------------
 loc_280830:                             ; CODE XREF: ROM:00280134   p
                                         ; ROM:00280206   p ...
-                lea     ($280850).l,a6
+                lea     (byte_280850).l,a6
                 lea     ($FFF100).l,a5
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 moveq   #$12,d7
 loc_280844:                             ; CODE XREF: ROM:00280848   j
                 move.w  (a6),(a5)+
@@ -856,49 +698,16 @@ loc_280844:                             ; CODE XREF: ROM:00280848   j
                 dbf     d7,loc_280844
                 bra.w   loc_28088C
 ; ---------------------------------------------------------------------------
-unk_280850:     dc.b $80
-                dc.b   4
-                dc.b $81
-                dc.b $24 ; $
-                dc.b $82
-                dc.b $28 ; (
-                dc.b $83
-                dc.b $38 ; 8
-                dc.b $84
-                dc.b   6
-                dc.b $85
-                dc.b $7C ; |
-                dc.b $86
-                dc.b   0
-                dc.b $87
-                dc.b   0
-                dc.b $88
-                dc.b   0
-                dc.b $89
-                dc.b   0
-                dc.b $8A
-                dc.b $3F ; ?
-                dc.b $8B
-                dc.b   0
-                dc.b $8C
-                dc.b $81
-                dc.b $8D
-                dc.b $3C ; <
-                dc.b $8E
-                dc.b   0
-                dc.b $8F
-                dc.b   2
-                dc.b $90
-                dc.b $11
-                dc.b $91
-                dc.b   0
-                dc.b $92
-                dc.b   0
+byte_280850:    dc.b $80, 4, $81, $24, $82, $28, $83, $38, $84, 6, $85
+                                        ; DATA XREF: ROM:loc_280830↑o
+                dc.b $7C, $86, 0, $87, 0, $88, 0, $89, 0, $8A, $3F, $8B
+                dc.b 0, $8C, $81, $8D, $3C, $8E, 0, $8F, 2, $90, $11, $91
+                dc.b 0, $92, 0
 ; ---------------------------------------------------------------------------
 loc_280876:                             ; CODE XREF: ROM:00282C2A   p
                                         ; ROM:00283166   p
                 lea     ($FFF100).l,a6
-                lea     ($C00004).l,a5
+                lea     (VDP_CTRL).l,a5
                 moveq   #$12,d7
 loc_280884:                             ; CODE XREF: ROM:00280886   j
                 move.w  (a6)+,(a5)
@@ -946,7 +755,7 @@ loc_2808F4:                             ; CODE XREF: ROM:002808F6   j
                 move.l  #$40000010,d5
                 moveq   #$50,d7 ; 'P'
                 moveq   #0,d6
-                lea     ($C00000).l,a6
+                lea     (VDP_DATA).l,a6
                 move.l  d5,4(a6)
 loc_28090E:                             ; CODE XREF: ROM:00280910   j
                 move.w  d6,(a6)
@@ -968,13 +777,13 @@ loc_280932:                             ; CODE XREF: ROM:0028026A   p
                                         ; ROM:0028077A   p ...
                 bsr.w   loc_280B9C
                 bset    #6,($FFF103).l
-                move.w  ($FFF102).l,($C00004).l
+                move.w  ($FFF102).l,(VDP_CTRL).l
                 rts
 ; ---------------------------------------------------------------------------
 loc_28094A:
                 bsr.w   loc_280B9C
                 bclr    #6,($FFF103).l
-                move.w  ($FFF102).l,($C00004).l
+                move.w  ($FFF102).l,(VDP_CTRL).l
                 rts
 ; ---------------------------------------------------------------------------
 loc_280962:                             ; CODE XREF: ROM:002809B6   p
@@ -1027,7 +836,7 @@ loc_2809AC:                             ; CODE XREF: ROM:0028099E   p
                 movem.l a5,-(sp)
                 movem.l d3-d4,-(sp)
                 bsr.s   loc_280962
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  #$800000,d4
 loc_2809C4:                             ; CODE XREF: ROM:002809D2   j
                 move.l  d5,4(a5)
@@ -1063,7 +872,7 @@ loc_2809FC:                             ; CODE XREF: ROM:002803D4   p
                 movem.l a5,-(sp)
                 movem.l d1-d3,-(sp)
                 bsr.w   loc_280962
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  #$800000,d3
 loc_280A14:                             ; CODE XREF: ROM:00280A26   j
                 move.l  d5,4(a5)
@@ -1083,7 +892,7 @@ loc_280A34:
                 movem.l a4-a5,-(sp)
                 movem.l d1-d3,-(sp)
                 bsr.w   loc_280962
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  #$800000,d3
 loc_280A4C:                             ; CODE XREF: ROM:00280A6E   j
                 move.l  d5,4(a5)
@@ -1123,7 +932,7 @@ loc_280A92:                             ; CODE XREF: ROM:002805A8   p
                 movem.l a5,-(sp)
                 movem.l d1-d3,-(sp)
                 bsr.w   loc_280962
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  #$800000,d3
 loc_280AAA:                             ; CODE XREF: ROM:00280ABE   j
                 move.l  d5,4(a5)
@@ -1159,7 +968,7 @@ loc_280ADE:                             ; CODE XREF: ROM:loc_280484   j
                 movem.l a5,-(sp)
                 movem.l d2-d3,-(sp)
                 bsr.w   loc_280962
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  #$800000,d3
 loc_280AFC:                             ; CODE XREF: ROM:00280B0A   j
                 move.l  d5,4(a5)
@@ -1177,7 +986,7 @@ loc_280B18:
                 movem.l a5,-(sp)
                 movem.l d2-d3,-(sp)
                 bsr.w   loc_280962
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  #$800000,d3
 loc_280B30:                             ; CODE XREF: ROM:00280B40   j
                 move.l  d5,4(a5)
@@ -1287,19 +1096,19 @@ loc_280C36:                             ; CODE XREF: ROM:00280C3A   j
                 subq.l  #1,d0
                 bne.s   loc_280C36
 loc_280C3C:                             ; CODE XREF: ROM:00280C2E   j
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_280C5C:                             ; CODE XREF: ROM:00280C74   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1311,7 +1120,7 @@ loc_280C5C:                             ; CODE XREF: ROM:00280C74   j
                 move.w  #$7800,(a4)
                 move.w  #$83,-(sp)
 loc_280C8E:                             ; CODE XREF: ROM:00280C96   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_280C8E
                 move.w  (sp)+,(a4)
 loc_280C9A:                             ; CODE XREF: ROM:00280CA0   j
@@ -1319,7 +1128,7 @@ loc_280C9A:                             ; CODE XREF: ROM:00280CA0   j
                 bne.s   loc_280C9A
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1327,19 +1136,19 @@ loc_280C9A:                             ; CODE XREF: ROM:00280CA0   j
                 move.w  ($FFF580).l,-4(a4)
                 move    (sp)+,sr
                 bsr.w   loc_28235C
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_280CEC:                             ; CODE XREF: ROM:00280D04   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1351,7 +1160,7 @@ loc_280CEC:                             ; CODE XREF: ROM:00280D04   j
                 move.w  #$C000,(a4)
                 move.w  #$80,-(sp)
 loc_280D1E:                             ; CODE XREF: ROM:00280D26   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_280D1E
                 move.w  (sp)+,(a4)
 loc_280D2A:                             ; CODE XREF: ROM:00280D30   j
@@ -1359,7 +1168,7 @@ loc_280D2A:                             ; CODE XREF: ROM:00280D30   j
                 bne.s   loc_280D2A
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1372,20 +1181,20 @@ locret_280D58:                          ; CODE XREF: ROM:loc_280C00   j
 ; ---------------------------------------------------------------------------
 loc_280D5A:                             ; CODE XREF: ROM:00280C0C   j
                 bclr    #6,($FFF103).l
-                move.w  ($FFF102).l,($C00004).l
-                lea     ($C00004).l,a4
+                move.w  ($FFF102).l,(VDP_CTRL).l
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_280D8C:                             ; CODE XREF: ROM:00280DA4   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1397,7 +1206,7 @@ loc_280D8C:                             ; CODE XREF: ROM:00280DA4   j
                 move.w  #$7800,(a4)
                 move.w  #$83,-(sp)
 loc_280DBE:                             ; CODE XREF: ROM:00280DC6   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_280DBE
                 move.w  (sp)+,(a4)
 loc_280DCA:                             ; CODE XREF: ROM:00280DD0   j
@@ -1405,7 +1214,7 @@ loc_280DCA:                             ; CODE XREF: ROM:00280DD0   j
                 bne.s   loc_280DCA
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1413,19 +1222,19 @@ loc_280DCA:                             ; CODE XREF: ROM:00280DD0   j
                 move.w  ($FFF580).l,-4(a4)
                 move    (sp)+,sr
                 bsr.w   loc_280EA0
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_280E1C:                             ; CODE XREF: ROM:00280E34   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1437,7 +1246,7 @@ loc_280E1C:                             ; CODE XREF: ROM:00280E34   j
                 move.w  #$5000,(a4)
                 move.w  #$80,-(sp)
 loc_280E4E:                             ; CODE XREF: ROM:00280E56   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_280E4E
                 move.w  (sp)+,(a4)
 loc_280E5A:                             ; CODE XREF: ROM:00280E60   j
@@ -1445,7 +1254,7 @@ loc_280E5A:                             ; CODE XREF: ROM:00280E60   j
                 bne.s   loc_280E5A
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1453,20 +1262,20 @@ loc_280E5A:                             ; CODE XREF: ROM:00280E60   j
                 move.w  ($FFD000).l,-4(a4)
                 move    (sp)+,sr
                 bset    #6,($FFF103).l
-                move.w  ($FFF102).l,($C00004).l
+                move.w  ($FFF102).l,(VDP_CTRL).l
                 bsr.w   loc_28235C
                 rts
 ; ---------------------------------------------------------------------------
 loc_280EA0:                             ; CODE XREF: ROM:00280DF8   p
                                         ; ROM:00281016   p
-                move.l  #$40000010,($C00004).l
-                move.w  ($FFF800).l,($C00000).l
-                move.w  ($FFF800).l,($C00000).l
-                move.l  #$70000003,($C00004).l
+                move.l  #$40000010,(VDP_CTRL).l
+                move.w  ($FFF800).l,(VDP_DATA).l
+                move.w  ($FFF800).l,(VDP_DATA).l
+                move.l  #$70000003,(VDP_CTRL).l
                 move.w  ($FFF850).l,d7
                 neg.w   d7
-                move.w  d7,($C00000).l
-                move.w  d7,($C00000).l
+                move.w  d7,(VDP_DATA).l
+                move.w  d7,(VDP_DATA).l
                 rts
 ; ---------------------------------------------------------------------------
 loc_280EDE:                             ; CODE XREF: ROM:00280C10   j
@@ -1483,19 +1292,19 @@ loc_280EF4:                             ; CODE XREF: ROM:00280EF8   j
                 subq.l  #1,d0
                 bne.s   loc_280EF4
 loc_280EFA:                             ; CODE XREF: ROM:00280EEC   j
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_280F1A:                             ; CODE XREF: ROM:00280F32   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1507,7 +1316,7 @@ loc_280F1A:                             ; CODE XREF: ROM:00280F32   j
                 move.w  #$7800,(a4)
                 move.w  #$83,-(sp)
 loc_280F4C:                             ; CODE XREF: ROM:00280F54   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_280F4C
                 move.w  (sp)+,(a4)
 loc_280F58:                             ; CODE XREF: ROM:00280F5E   j
@@ -1515,7 +1324,7 @@ loc_280F58:                             ; CODE XREF: ROM:00280F5E   j
                 bne.s   loc_280F58
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1523,19 +1332,19 @@ loc_280F58:                             ; CODE XREF: ROM:00280F5E   j
                 move.w  ($FFF580).l,-4(a4)
                 move    (sp)+,sr
                 bsr.w   loc_28235C
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_280FAA:                             ; CODE XREF: ROM:00280FC2   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1547,7 +1356,7 @@ loc_280FAA:                             ; CODE XREF: ROM:00280FC2   j
                 move.w  #$C000,(a4)
                 move.w  #$80,-(sp)
 loc_280FDC:                             ; CODE XREF: ROM:00280FE4   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_280FDC
                 move.w  (sp)+,(a4)
 loc_280FE8:                             ; CODE XREF: ROM:00280FEE   j
@@ -1555,7 +1364,7 @@ loc_280FE8:                             ; CODE XREF: ROM:00280FEE   j
                 bne.s   loc_280FE8
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1563,19 +1372,19 @@ loc_280FE8:                             ; CODE XREF: ROM:00280FEE   j
                 move.w  ($FFF500).l,-4(a4)
                 move    (sp)+,sr
                 bsr.w   loc_280EA0
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_28103A:                             ; CODE XREF: ROM:00281052   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1587,7 +1396,7 @@ loc_28103A:                             ; CODE XREF: ROM:00281052   j
                 move.w  #$5000,(a4)
                 move.w  #$80,-(sp)
 loc_28106C:                             ; CODE XREF: ROM:00281074   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_28106C
                 move.w  (sp)+,(a4)
 loc_281078:                             ; CODE XREF: ROM:0028107E   j
@@ -1595,7 +1404,7 @@ loc_281078:                             ; CODE XREF: ROM:0028107E   j
                 bne.s   loc_281078
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1606,19 +1415,19 @@ loc_281078:                             ; CODE XREF: ROM:0028107E   j
 ; ---------------------------------------------------------------------------
 loc_2810A8:                             ; CODE XREF: ROM:00280C1C   j
                 bsr.w   loc_28113A
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_2810CC:                             ; CODE XREF: ROM:002810E4   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1630,7 +1439,7 @@ loc_2810CC:                             ; CODE XREF: ROM:002810E4   j
                 move.w  #$5000,(a4)
                 move.w  #$80,-(sp)
 loc_2810FE:                             ; CODE XREF: ROM:00281106   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_2810FE
                 move.w  (sp)+,(a4)
 loc_28110A:                             ; CODE XREF: ROM:00281110   j
@@ -1638,7 +1447,7 @@ loc_28110A:                             ; CODE XREF: ROM:00281110   j
                 bne.s   loc_28110A
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1662,19 +1471,19 @@ loc_281150:                             ; CODE XREF: ROM:00281154   j
                 subq.l  #1,d0
                 bne.s   loc_281150
 loc_281156:                             ; CODE XREF: ROM:00281148   j
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_281176:                             ; CODE XREF: ROM:0028118E   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1686,7 +1495,7 @@ loc_281176:                             ; CODE XREF: ROM:0028118E   j
                 move.w  #$7800,(a4)
                 move.w  #$83,-(sp)
 loc_2811A8:                             ; CODE XREF: ROM:002811B0   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_2811A8
                 move.w  (sp)+,(a4)
 loc_2811B4:                             ; CODE XREF: ROM:002811BA   j
@@ -1694,7 +1503,7 @@ loc_2811B4:                             ; CODE XREF: ROM:002811BA   j
                 bne.s   loc_2811B4
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1702,19 +1511,19 @@ loc_2811B4:                             ; CODE XREF: ROM:002811BA   j
                 move.w  ($FFF580).l,-4(a4)
                 move    (sp)+,sr
                 bsr.w   loc_28235C
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_281206:                             ; CODE XREF: ROM:0028121E   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1726,7 +1535,7 @@ loc_281206:                             ; CODE XREF: ROM:0028121E   j
                 move.w  #$C000,(a4)
                 move.w  #$80,-(sp)
 loc_281238:                             ; CODE XREF: ROM:00281240   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_281238
                 move.w  (sp)+,(a4)
 loc_281244:                             ; CODE XREF: ROM:0028124A   j
@@ -1734,7 +1543,7 @@ loc_281244:                             ; CODE XREF: ROM:0028124A   j
                 bne.s   loc_281244
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1758,19 +1567,19 @@ loc_28128E:                             ; CODE XREF: ROM:00281292   j
                 subq.l  #1,d0
                 bne.s   loc_28128E
 loc_281294:                             ; CODE XREF: ROM:00281286   j
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_2812B4:                             ; CODE XREF: ROM:002812CC   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1782,7 +1591,7 @@ loc_2812B4:                             ; CODE XREF: ROM:002812CC   j
                 move.w  #$7800,(a4)
                 move.w  #$83,-(sp)
 loc_2812E6:                             ; CODE XREF: ROM:002812EE   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_2812E6
                 move.w  (sp)+,(a4)
 loc_2812F2:                             ; CODE XREF: ROM:002812F8   j
@@ -1790,7 +1599,7 @@ loc_2812F2:                             ; CODE XREF: ROM:002812F8   j
                 bne.s   loc_2812F2
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1798,19 +1607,19 @@ loc_2812F2:                             ; CODE XREF: ROM:002812F8   j
                 move.w  ($FFF580).l,-4(a4)
                 move    (sp)+,sr
                 bsr.w   loc_28235C
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_281344:                             ; CODE XREF: ROM:0028135C   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -1822,7 +1631,7 @@ loc_281344:                             ; CODE XREF: ROM:0028135C   j
                 move.w  #$C000,(a4)
                 move.w  #$80,-(sp)
 loc_281376:                             ; CODE XREF: ROM:0028137E   j
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 bne.s   loc_281376
                 move.w  (sp)+,(a4)
 loc_281382:                             ; CODE XREF: ROM:00281388   j
@@ -1830,7 +1639,7 @@ loc_281382:                             ; CODE XREF: ROM:00281388   j
                 bne.s   loc_281382
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move.w  ($FFF102).l,(a4)
@@ -1980,7 +1789,7 @@ SC_NemDec:                              ; CODE XREF: ROM:0028022E   p
                                         ; ROM:00280244   p ...
                 movem.l d0-d7/a0-a1/a3-a5,-(sp)
                 lea     (loc_28169E).l,a3
-                lea     ($C00000).l,a4
+                lea     (VDP_DATA).l,a4
                 bra.s   loc_2815F6
 ; ---------------------------------------------------------------------------
 loc_2815E2:
@@ -2381,7 +2190,7 @@ loc_2818C0:                             ; CODE XREF: ROM:002818B8   j
                 rts
 ; ---------------------------------------------------------------------------
 loc_2818DE:                             ; CODE XREF: ROM:0028012E   p
-                lea     ($A11100).l,a4
+                lea     (Z80_BUS).l,a4
                 move.w  #$100,(a4)
                 move.w  #$100,$100(a4)
 loc_2818EE:                             ; CODE XREF: ROM:002818F8   j
@@ -2399,7 +2208,7 @@ loc_2818EE:                             ; CODE XREF: ROM:002818F8   j
                 nop
                 move.w  #0,(a4)
                 move.w  #$100,$100(a4)
-                lea     ($A11100).l,a4
+                lea     (Z80_BUS).l,a4
                 move.w  #$100,$100(a4)
                 move.w  #$100,(a4)
 loc_281926:                             ; CODE XREF: ROM:00281930   j
@@ -2408,14 +2217,14 @@ loc_281926:                             ; CODE XREF: ROM:00281930   j
                 nop
                 nop
                 bne.s   loc_281926
-                lea     ($A00000).l,a6
+                lea     (Z80_RAM).l,a6
                 move.w  #$1FFF,d7
                 moveq   #0,d0
 loc_28193E:                             ; CODE XREF: ROM:00281940   j
                 move.b  d0,(a6)+
                 dbf     d7,loc_28193E
                 lea     ((Puyo_Data+$F6000)).l,a0
-                lea     ($A00000).l,a1
+                lea     (Z80_RAM).l,a1
                 move.w  #$1FF0,d7
 loc_281954:                             ; CODE XREF: ROM:00281956   j
                 move.b  (a0)+,(a1)+
@@ -2439,13 +2248,13 @@ SC_PlaySound:                           ; CODE XREF: ROM:00280274   p
                                         ; ROM:002802A0   p ...
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_2819A6:                             ; CODE XREF: ROM:002819BE   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -2455,7 +2264,7 @@ loc_2819A6:                             ; CODE XREF: ROM:002819BE   j
                 move.b  #0,($A01FFE).l
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move    (sp)+,sr
@@ -2464,13 +2273,13 @@ loc_2819A6:                             ; CODE XREF: ROM:002819BE   j
 loc_2819E2:                             ; CODE XREF: ROM:002802AE   p
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_2819F0:                             ; CODE XREF: ROM:00281A08   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -2480,7 +2289,7 @@ loc_2819F0:                             ; CODE XREF: ROM:00281A08   j
                 move.b  #0,($A01FFE).l
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move    (sp)+,sr
@@ -2489,13 +2298,13 @@ loc_2819F0:                             ; CODE XREF: ROM:00281A08   j
 loc_281A2E:                             ; CODE XREF: ROM:loc_282C16   p
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_281A3C:                             ; CODE XREF: ROM:00281A54   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -2505,7 +2314,7 @@ loc_281A3C:                             ; CODE XREF: ROM:00281A54   j
                 move.b  #0,($A01FFE).l
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 move    (sp)+,sr
@@ -2839,7 +2648,7 @@ loc_281D92:                             ; CODE XREF: ROM:00281D9A   j
 loc_281D9E:                             ; CODE XREF: ROM:002808C2   j
                                         ; ROM:002808E4   j ...
                 moveq   #0,d6
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  #$8F01,(a4)
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
@@ -2867,7 +2676,7 @@ loc_281DEC:
                 lsr.w   #2,d5
                 swap    d5
                 ori.b   #$C0,d5
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  #$8F01,(a4)
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
@@ -2894,9 +2703,9 @@ loc_281E3C:                             ; CODE XREF: ROM:00281E42   j
                 rts
 ; ---------------------------------------------------------------------------
 loc_281E50:
-                move.l  d5,($C00004).l
+                move.l  d5,(VDP_CTRL).l
 loc_281E56:                             ; CODE XREF: ROM:00281E5C   j
-                move.w  ($C00000).l,(a5)+
+                move.w  (VDP_DATA).l,(a5)+
                 dbf     d7,loc_281E56
                 rts
 ; ---------------------------------------------------------------------------
@@ -2943,13 +2752,13 @@ loc_281EF0:                             ; CODE XREF: ROM:00281E82   p
                                         ; ROM:00281E9C   p ...
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_281EFE:                             ; CODE XREF: ROM:00281F16   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -2957,28 +2766,28 @@ loc_281EFE:                             ; CODE XREF: ROM:00281F16   j
                 bne.s   loc_281EFE
                 move.w  #$8F00,d4
                 move.b  d7,d4
-                move.w  d4,($C00004).l
+                move.w  d4,(VDP_CTRL).l
                 bra.w   loc_281F5C
 ; ---------------------------------------------------------------------------
 loc_281F28:                             ; CODE XREF: ROM:00282758   p
                 move    sr,-(sp)
                 ori     #$700,sr
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_281F36:                             ; CODE XREF: ROM:00281F4E   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
                 nop
                 bne.s   loc_281F36
-                move.w  #$8F02,($C00004).l
+                move.w  #$8F02,(VDP_CTRL).l
                 bsr.w   loc_280962
 loc_281F5C:                             ; CODE XREF: ROM:00281F24   j
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
@@ -3027,10 +2836,10 @@ loc_281FBE:                             ; CODE XREF: ROM:00281FC4   j
                 swap    d4
                 move.w  d4,(a4)
                 move.l  (a6),-4(a4)
-                move.w  #$8F02,($C00004).l
+                move.w  #$8F02,(VDP_CTRL).l
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -3049,21 +2858,21 @@ loc_281FBE:                             ; CODE XREF: ROM:00281FC4   j
                 rts
 ; ---------------------------------------------------------------------------
 loc_282016:
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_28201E:                             ; CODE XREF: ROM:00282036   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
                 nop
                 bne.s   loc_28201E
-                move.w  #$8F02,($C00004).l
+                move.w  #$8F02,(VDP_CTRL).l
                 bsr.w   loc_280962
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
@@ -3099,7 +2908,7 @@ loc_28209A:                             ; CODE XREF: ROM:002820A0   j
                 move.w  ($FFF102).l,(a4)
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 rts
@@ -3135,9 +2944,9 @@ loc_2820BA:
                 movem.l (sp)+,a6
 loc_28210A:                             ; CODE XREF: ROM:002820D6   j
                                         ; ROM:002820FC   p
-                move.w  #$8F02,($C00004).l
+                move.w  #$8F02,(VDP_CTRL).l
                 bsr.w   loc_280962
-                lea     ($C00004).l,a4
+                lea     (VDP_CTRL).l,a4
                 move.w  ($FFF102).l,d4
                 bset    #4,d4
                 move.w  d4,(a4)
@@ -3176,7 +2985,7 @@ loc_28216C:                             ; CODE XREF: ROM:00282172   j
 loc_28217C:
                 asl.w   #2,d7
                 subq.w  #1,d7
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
 loc_282186:                             ; CODE XREF: ROM:0028219C   j
                 move.w  (a6)+,d6
                 bsr.s   loc_2821C4
@@ -3348,13 +3157,13 @@ locret_28235A:                          ; CODE XREF: ROM:0028231A   j
 ; ---------------------------------------------------------------------------
 loc_28235C:                             ; CODE XREF: ROM:00280CC8   p
                                         ; ROM:00280E9A   p ...
-                move.w  #$100,($A11100).l
+                move.w  #$100,(Z80_BUS).l
 loc_282364:                             ; CODE XREF: ROM:0028237C   j
                 nop
                 nop
                 nop
                 nop
-                btst    #0,($A11100).l
+                btst    #0,(Z80_BUS).l
                 nop
                 nop
                 nop
@@ -3375,7 +3184,7 @@ loc_28238A:                             ; CODE XREF: ROM:00282392   j
                 move.b  d0,1(a1)
                 nop
                 nop
-                move.w  #0,($A11100).l
+                move.w  #0,(Z80_BUS).l
                 nop
                 nop
                 rts
@@ -3760,7 +3569,7 @@ loc_282714:
 loc_28271C:                             ; CODE XREF: ROM:00280762   p
                 lea     (SC_Font).l,a0
 loc_282722:                             ; CODE XREF: ROM:0028271A   j
-                move.l  #$44000000,($C00004).l
+                move.l  #$44000000,(VDP_CTRL).l
                 jsr     (SC_NemDec).l
                 lea     (byte_282760).l,a5
                 lea     ($FFF560).l,a6
@@ -3805,7 +3614,7 @@ loc_2827B0:                             ; CODE XREF: ROM:002827EA   j
                 ori     #$700,sr
                 movem.l d5,-(sp)
                 jsr     (loc_280962).l
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  d5,4(a5)
                 clr.w   d5
                 move.b  (a6)+,d5
@@ -3848,7 +3657,7 @@ loc_28280E:                             ; CODE XREF: ROM:00282806   p
                 ori     #$700,sr
                 movem.l d5/d7/a5,-(sp)
                 jsr     (loc_280962).l
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  d5,4(a5)
 loc_282828:                             ; CODE XREF: ROM:0028283A   j
                 clr.w   d5
@@ -3870,7 +3679,7 @@ loc_28283C:                             ; CODE XREF: ROM:0028282C   j
 loc_282844:
                 movem.l d0/d5/a5,-(sp)
                 jsr     (loc_280962).l
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  d5,4(a5)
                 move.w  #$27,d0 ; '''
 loc_28285C:                             ; CODE XREF: ROM:00282866   j
@@ -3977,14 +3786,14 @@ loc_28292A:                             ; CODE XREF: ROM:002828F8   j
                 clr.w   d6
                 move.w  d1,d5
                 jsr     (loc_280962).l
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  d5,4(a5)
                 move.w  d6,(a5)
                 move.w  d6,(a5)
                 move.w  d1,d5
                 addi.w  #$80,d5
                 jsr     (loc_280962).l
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  d5,4(a5)
                 move.w  d6,(a5)
                 move.w  d6,(a5)
@@ -4019,7 +3828,7 @@ loc_282980:                             ; CODE XREF: ROM:0028296A   j
                 add.w   d0,d6
                 move.w  d1,d5
                 jsr     (loc_280962).l
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  d5,4(a5)
                 move.w  d6,(a5)
                 addq.w  #2,d6
@@ -4028,7 +3837,7 @@ loc_282980:                             ; CODE XREF: ROM:0028296A   j
                 move.w  d1,d5
                 addi.w  #$80,d5
                 jsr     (loc_280962).l
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  d5,4(a5)
                 move.w  d6,(a5)
                 addq.w  #2,d6
@@ -4045,7 +3854,7 @@ loc_2829C2:                             ; CODE XREF: ROM:002828FE   j
                 addq.w  #1,d6
                 move.w  d1,d5
                 jsr     (loc_280962).l
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  d5,4(a5)
                 move.w  d6,(a5)
                 addq.w  #2,d6
@@ -4054,7 +3863,7 @@ loc_2829C2:                             ; CODE XREF: ROM:002828FE   j
                 move.w  d1,d5
                 addi.w  #$80,d5
                 jsr     (loc_280962).l
-                lea     ($C00000).l,a5
+                lea     (VDP_DATA).l,a5
                 move.l  d5,4(a5)
                 move.w  d6,(a5)
                 addq.w  #2,d6
@@ -4339,8 +4148,8 @@ loc_282C5E:                             ; CODE XREF: ROM:00282C0A   p
                 jsr     (loc_2809FA).l
                 move.b  ($FFF18A).l,d7
                 beq.s   loc_282C92
-                move.l  #$66300002,($C00004).l
-                move.l  #$40314032,($C00000).l
+                move.l  #$66300002,(VDP_CTRL).l
+                move.l  #$40314032,(VDP_DATA).l
 loc_282C92:                             ; CODE XREF: ROM:00282C7C   j
                 bsr.w   loc_282D1E
                 move.w  #$28,($FF4FF0).l ; '('
@@ -4414,7 +4223,7 @@ loc_282D9C:                             ; CODE XREF: ROM:00282C34   p
                 lea     (SC_Sega_Logo).l,a0
                 move.w  #$20,d5 ; ' '
                 jsr     (loc_280962).l
-                move.l  d5,($C00004).l
+                move.l  d5,(VDP_CTRL).l
                 jsr     (SC_NemDec).l
                 rts
 ; ---------------------------------------------------------------------------
