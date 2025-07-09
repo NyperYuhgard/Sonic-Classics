@@ -23,7 +23,7 @@
 ; ===========================================================================
 ; Assembly Options
 ; ===========================================================================
-SkipChecksum = 0
+SkipChecksum = 1
 ; ===========================================================================
 ; Segment type: Pure code
 ; segment "ROM"
@@ -126,7 +126,7 @@ SC_EntryPoint:
                 tst.w   (IO_EXT_CTRL).l
 loc_28000E:                             ; CODE XREF: ROM:00280006   j
                 bne.s   loc_28008C
-                lea     word_28008E(pc),a5
+                lea     SetupValues(pc),a5
                 movem.w (a5)+,d5-d7
                 movem.l (a5)+,a0-a4
                 move.b  -$10FF(a1),d0
@@ -182,7 +182,7 @@ loc_28007A:                             ; CODE XREF: ROM:0028007E   j
 loc_28008C:                             ; CODE XREF: ROM:loc_28000E   j
                 bra.s   SC_GameProgram
 ; ---------------------------------------------------------------------------
-word_28008E:    dc.w $8000              ; DATA XREF: ROM:00280010   o
+SetupValues:    dc.w $8000              ; DATA XREF: ROM:00280010   o
                 dc.w $3FFF
                 dc.w $100
                 dc.l Z80_RAM
@@ -371,7 +371,7 @@ loc_280288:                             ; CODE XREF: ROM:0028029A   j
                 jsr     (loc_280446).l
                 bsr.s   loc_2802CA
                 bsr.s   loc_2802FE
-                btst    #7,($FFF13C).l  ; If Start Button Pressed?
+                btst    #7,(SC_Ctrl1).l  ; If Start Button Pressed?
                 beq.s   loc_280288      ; If Not, Loop
                 move.w  #SndID_SC_Select,d7 ; 'A'   ; Play SC_Menu_Start_Sound
                 jsr     (SC_PlaySound).l
@@ -384,7 +384,7 @@ loc_280288:                             ; CODE XREF: ROM:0028029A   j
                 jmp     SC_GameIndex
 ; ---------------------------------------------------------------------------
 loc_2802CA:                             ; CODE XREF: ROM:0028028E   p
-                btst    #2,($FFF13C).l  ; If Left Button Pressed?
+                btst    #2,(SC_Ctrl1).l  ; If Left Button Pressed?
                 beq.s   locret_2802FC   ; If Not
                 move.w  #SndID_SC_Cursor,d7 ; 'E'   ; Play SC_Menu_Bip_Sound
                 jsr     (SC_PlaySound).l
@@ -401,7 +401,7 @@ locret_2802FC:                          ; CODE XREF: ROM:002802D2   j
                 rts
 ; ---------------------------------------------------------------------------
 loc_2802FE:                             ; CODE XREF: ROM:00280290   p
-                btst    #3,($FFF13C).l  ; If Right Button Pressed?
+                btst    #3,(SC_Ctrl1).l  ; If Right Button Pressed?
                 beq.s   locret_28032C   ; If Not
                 move.w  #SndID_SC_Cursor,d7 ; 'E'   ; Play SC_Menu_Bip_Sound
                 jsr     (SC_PlaySound).l
@@ -567,34 +567,19 @@ loc_2804C0:                             ; CODE XREF: ROM:loc_2803B8   p
                 movea.l byte_2804F2(pc,d7.w),a6
                 rts
 ; ---------------------------------------------------------------------------
-byte_2804D4:    dc.b $60, 0, 0, $28, $6C, $36, 0, $FF, $F5, $60, 0, $28
-                dc.b $67, $32, $20, 0, 0, $28, $6A, $56, 0, $FF, $F5, $20
-                dc.b 0, $28, $66, $F2
+byte_2804D4:    incbin "SC/Misc/Unk_2804D4.bin"
                 even
                 
-byte_2804F0:    dc.b $40, 0             ; DATA XREF: ROM:002804CA↑r
+byte_2804F0:    incbin "SC/Misc/Unk_2804F0.bin"           ; DATA XREF: ROM:002804CA↑r
                 even
 
-byte_2804F2:    dc.b 0, $28, $6B, $46   ; DATA XREF: ROM:002804CE↑r
+byte_2804F2:    incbin "SC/Misc/Unk_2804F2.bin"   ; DATA XREF: ROM:002804CE↑r
                 even
 
-byte_2804F6:    dc.b 0, $FF, $F5, $40   ; DATA XREF: ROM:002804B6↑r
+byte_2804F6:    incbin "SC/Misc/Unk_2804F6.bin"   ; DATA XREF: ROM:002804B6↑r
                 even
 
-byte_2804FA:    dc.b 0, $28, $67, $12, $60, 0, 0, $28, $6C, $36, 0, $FF
-                                        ; DATA XREF: ROM:002804BA↑r
-                dc.b $F5, $60, 0, $28, $67, $32, $20, 0, 0, $28, $6A, $56
-                dc.b 0, $FF, $F5, $20, 0, $28, $66, $F2, $40, 0, 0, $28
-                dc.b $6B, $46, 0, $FF, $F5, $40, 0, $28, $67, $12, $60
-                dc.b 0, 0, $28, $6C, $36, 0, $FF, $F5, $60, 0, $28, $67
-                dc.b $32, $20, 0, 0, $28, $6A, $56, 0, $FF, $F5, $20, 0
-                dc.b $28, $66, $F2, $40, 0, 0, $28, $6B, $46, 0, $FF, $F5
-                dc.b $40, 0, $28, $67, $12, $60, 0, 0, $28, $6C, $36, 0
-                dc.b $FF, $F5, $60, 0, $28, $67, $32, $20, 0, 0, $28, $6A
-                dc.b $56, 0, $FF, $F5, $20, 0, $28, $66, $F2, $40, 0, 0
-                dc.b $28, $6B, $46, 0, $FF, $F5, $40, 0, $28, $67, $12
-                dc.b $60, 0, 0, $28, $6C, $36, 0, $FF, $F5, $60, 0, $28
-                dc.b $67, $32
+byte_2804FA:    incbin "SC/Misc/Unk_2804FA.bin"   ; DATA XREF: ROM:002804BA↑r               
                 even
 ; ---------------------------------------------------------------------------
 Load_Menu_Text:                         ; CODE XREF: ROM:00280262   p
@@ -630,20 +615,20 @@ aSelectCursor:  dc.b 'SELECT CURSOR - '
 aLeftOrRightBut:dc.b 'LEFT or RIGHT BUTTON                                    '
 aSelectGameStar:dc.b 'SELECT GAME   - START BUTTON        '
 
-byte_280682:    dc.b $C0, 0, 0, $D, 0, $13, 0, 0, 0, $28, $67, $B2, $C0
-                                        ; DATA XREF: ROM:0028024A   o
-                dc.b $28, 0, $D, 0, $13, 0, 0, 0, $28, $67, $B2, $C7, 0
-                dc.b 0, $D, 0, $13, 0, 0, 0, $28, $67, $B2, $C7, $28, 0
-                dc.b $D, 0, $13, 0, 0, 0, $28, $67, $B2, $A1, $36, 0, 1
-                dc.b 0, $A, 0, 0, 0, $28, $6A, $2A
+byte_280682:    incbin "SC/Misc/Unk_280682.bin" ; DATA XREF: ROM:0028024A↑o
+            ;    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            ;    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            ;    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            ;    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            ;    dc.b 0, 0, 0, 0, 0, 0, 0, 0
                 even
 
-byte_2806BE:    dc.b $AA, $AE, 0, 1, 0, $11, 0, 0, 0, $28, $69, $E2, $A4
-                                        ; DATA XREF: ROM:00280468   o
-                dc.b $9A, 0, 9, 0, $B, $20, 0, 0, $28, $6A, $56, $A4, $B4
-                dc.b 0, 9, 0, $B, $40, 0, 0, $28, $6B, $46, $A4, $CE, 0
-                dc.b 9, 0, $B, $60, 0, 0, $28, $6C, $36, 0, 0, $4E, $75
-                dc.b 0, 0, 0, 0
+byte_2806BE:    incbin "SC/Misc/Unk_2806BE.bin" ; DATA XREF: ROM:00280468   o
+            ;    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0                                       
+            ;    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            ;    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            ;    dc.b 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+            ;    dc.b 0, 0, 0, 0
                 even
 ; ---------------------------------------------------------------------------
 SC_CheckSumCheck:                       ; CODE XREF: ROM:00280144   p
@@ -719,11 +704,7 @@ loc_280844:                             ; CODE XREF: ROM:00280848   j
                 dbf     d7,loc_280844
                 bra.w   loc_28088C
 ; ---------------------------------------------------------------------------
-byte_280850:    dc.b $80, 4, $81, $24, $82, $28, $83, $38, $84, 6, $85
-                                        ; DATA XREF: ROM:loc_280830↑o
-                dc.b $7C, $86, 0, $87, 0, $88, 0, $89, 0, $8A, $3F, $8B
-                dc.b 0, $8C, $81, $8D, $3C, $8E, 0, $8F, 2, $90, $11, $91
-                dc.b 0, $92, 0
+byte_280850:    incbin "SC/Misc/Unk_280850.bin"  ; DATA XREF: ROM:loc_280830↑o
                 even
 ; ---------------------------------------------------------------------------
 loc_280876:                             ; CODE XREF: ROM:00282C2A   p
@@ -4262,13 +4243,13 @@ loc_282D9C:                             ; CODE XREF: ROM:00282C34   p
                 jsr     (SC_NemDec).l
                 rts
 ; ---------------------------------------------------------------------------
-byte_282DBA:    dc.b 6, 0, 0, 1, 0, 0, $29, 3, $CF, $F, $F8, 0
+byte_282DBA:    incbin "SC/Misc/Unk_282DBA.bin"
                 even
 
 SC_Sega_Logo:   incbin "SC/Art/Nem/SC_Sega_Logo.nem"  ; DATA XREF: ROM:loc_282D9C   o
                 even
 
-byte_283116:    dc.b $14, $44, $42, $40
+byte_283116:    incbin "SC/Misc/Unk_283116.bin"
                 even
 ; ---------------------------------------------------------------------------
 loc_28311A:                             ; CODE XREF: ROM:00282CB8   p
@@ -4797,7 +4778,7 @@ loc_28362C:
 ; ---------------------------------------------------------------------------
 loc_283650:                             ; CODE XREF: ROM:00283634   j
                                         ; ROM:00283644   j ...
-                move.b  ($FFF13C).l,d7
+                move.b  (SC_Ctrl1).l,d7
                 or.b    ($FFF164).l,d7
                 or.b    ($FFF16E).l,d7
                 or.b    ($FFF178).l,d7
@@ -4809,7 +4790,7 @@ loc_283650:                             ; CODE XREF: ROM:00283634   j
                 rts
 ; ---------------------------------------------------------------------------
 loc_283684:                             ; CODE XREF: ROM:00283648   j
-                move.b  ($FFF13C).l,d7
+                move.b  (SC_Ctrl1).l,d7
                 or.b    ($FFF164).l,d7
                 or.b    ($FFF16E).l,d7
                 swap    d7
@@ -4820,7 +4801,7 @@ loc_283684:                             ; CODE XREF: ROM:00283648   j
 ; ---------------------------------------------------------------------------
 loc_2836AC:                             ; CODE XREF: ROM:loc_28362C   j
                                         ; ROM:00283638   j ...
-                move.b  ($FFF13C).l,d7
+                move.b  (SC_Ctrl1).l,d7
                 or.b    ($FFF164).l,d7
                 swap    d7
                 move.b  ($FFF13D).l,d7
@@ -4829,7 +4810,7 @@ loc_2836AC:                             ; CODE XREF: ROM:loc_28362C   j
 ; ---------------------------------------------------------------------------
 loc_2836C8:                             ; CODE XREF: ROM:00283630   j
                                         ; ROM:00283640   j
-                move.b  ($FFF13C).l,d7
+                move.b  (SC_Ctrl1).l,d7
                 swap    d7
                 move.b  ($FFF13D).l,d7
                 rts
@@ -4854,7 +4835,7 @@ locret_283704:                          ; CODE XREF: ROM:002836E8   j
 loc_283706:                             ; CODE XREF: ROM:0028360E   p
                 movem.l d3/a0,-(sp)
                 lea     ($FF4104).l,a0
-                move.b  ($FFF13C).l,(a0)
+                move.b  (SC_Ctrl1).l,(a0)
                 move.b  ($FFF164).l,d3
                 or.b    d3,(a0)
                 move.b  ($FFF16E).l,d3
