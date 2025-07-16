@@ -25,68 +25,68 @@
 ; segment "ROM"
                 dc.l $FFFFE0
                 dc.l SC_EntryPoint
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
                 dc.l Ext
-                dc.l S2_ErrorTrap
+                dc.l S2_Data
                 dc.l $FFFFF4
-                dc.l S2_ErrorTrap
+                dc.l S2_Data
                 dc.l $FFFFFA
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
-                dc.l S2_ErrorTrap
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
+                dc.l S2_Data
 aSegaMegaDrive: dc.b 'SEGA MEGA DRIVE '
 aCSega1997Jan:  dc.b '(C)SEGA 1997.Jan'
 aSonicCompilati:dc.b 'SONIC COMPILATION                               '
@@ -105,11 +105,11 @@ ModemCode:      dc.b $20, $20, $20, $20, $20, $20, $20, $20, $20, $20
                 dc.b $20, $20
 Reserved:       dc.b '                                        '
 CountryCode:    dc.b 'F               '
-S2_ErrorTrap:   incbin "SC/S2_Data.bin" ; CODE XREF: ROM:002801EA   j
+S2_Data:        incbin "SC/S2_Data.bin" ; CODE XREF: ROM:002801EA   j
                 even
-Puyo_Vector_Table:incbin "SC/Puyo_Data.bin"
+Puyo_Data:      incbin "SC/Puyo_Data.bin"
                 even
-S1_VectorTable: incbin "SC/S1_Data.bin"
+S1_Data:        incbin "SC/S1_Data.bin"
                 even
 ; ---------------------------------------------------------------------------
 SC_EntryPoint:
@@ -206,7 +206,10 @@ SetupValues:    dc.w $8000              ; DATA XREF: ROM:00280010   o
                 dc.b   0
                 dc.b   0
                 dc.b $80
-                dc.l $40000080
+                dc.b $40
+                dc.b   0
+                dc.b   0
+                dc.b $80
                 dc.b $AF
                 dc.b   1
                 dc.b $D9
@@ -249,10 +252,7 @@ SetupValues:    dc.w $8000              ; DATA XREF: ROM:00280010   o
                 dc.w $8F02
                 dc.l $C0000000
                 dc.l $40000010
-                dc.b $9F
-                dc.b $BF
-                dc.b $DF
-                dc.b $FF
+PSG_Data:       dc.b $9F, $BF, $DF, $FF
 ; ---------------------------------------------------------------------------
 SC_GameProgram:                         ; CODE XREF: ROM:loc_28008C   j
                 tst.w   ($C00004).l
@@ -313,27 +313,27 @@ Load_SC_Menu:
 ; ---------------------------------------------------------------------------
 Load_Puyo:
                 lea     ($FFFC00).l,sp
-                jmp     Puyo_Vector_Table+$200 ; Puyo_EntryPoint
+                jmp     Puyo_Data+$200  ; Puyo_EntryPoint
 ; ---------------------------------------------------------------------------
-                jmp     Puyo_Vector_Table+$7B4 ; Puyo_H_Int
+                jmp     Puyo_Data+$7B4  ; Puyo_H_Int
 ; ---------------------------------------------------------------------------
-                jmp     Puyo_Vector_Table+$54E ; Puyo_V_Int
+                jmp     Puyo_Data+$54E  ; Puyo_V_Int
 ; ---------------------------------------------------------------------------
 Load_S1:
                 lea     ($FFFE00).l,sp
-                jmp     S1_VectorTable+$200 ; S1_EntryPoint
+                jmp     S1_Data+$200    ; S1_EntryPoint
 ; ---------------------------------------------------------------------------
-                jmp     S1_VectorTable+$10DA ; S1_H_Int
+                jmp     S1_Data+$10DA   ; S1_H_Int
 ; ---------------------------------------------------------------------------
-                jmp     S1_VectorTable+$AC4 ; S1_V_Int
+                jmp     S1_Data+$AC4    ; S1_V_Int
 ; ---------------------------------------------------------------------------
 Load_S2:
                 lea     ($FFFE00).l,sp
-                jmp     (S2_ErrorTrap+6).l ; S2_EntryPoint
+                jmp     (S2_Data+6).l   ; S2_EntryPoint
 ; ---------------------------------------------------------------------------
-                jmp     (S2_ErrorTrap+$D1C).l ; S2_H_Int
+                jmp     (S2_Data+$D1C).l ; S2_H_Int
 ; ---------------------------------------------------------------------------
-                jmp     (S2_ErrorTrap+$1CE).l ; S2_V_Int
+                jmp     (S2_Data+$1CE).l ; S2_V_Int
 ; ---------------------------------------------------------------------------
 SC_GameMenu:                            ; CODE XREF: ROM:002801A2   j
                 jsr     (loc_282C06).l
@@ -369,7 +369,7 @@ loc_280288:                             ; CODE XREF: ROM:0028029A   j
                 jsr     (SC_PlaySound).l
                 moveq   #$3C,d7 ; '<'
                 jsr     (loc_280BC2).l
-                jsr     (loc_2819E2).l
+                jsr     (Fade_Music).l
                 jsr     (loc_2813E8).l
                 addq.w  #1,($FFFFE0).l
                 bsr.w   SC_LoaderMain
@@ -2209,7 +2209,7 @@ loc_281926:                             ; CODE XREF: ROM:00281930   j
 loc_28193E:                             ; CODE XREF: ROM:00281940   j
                 move.b  d0,(a6)+
                 dbf     d7,loc_28193E
-                lea     ((Puyo_Vector_Table+$F6000)).l,a0
+                lea     ((Puyo_Data+$F6000)).l,a0
                 lea     ($A00000).l,a1
                 move.w  #$1FF0,d7
 loc_281954:                             ; CODE XREF: ROM:00281956   j
@@ -2256,7 +2256,7 @@ loc_2819A6:                             ; CODE XREF: ROM:002819BE   j
                 move    (sp)+,sr
                 rts
 ; ---------------------------------------------------------------------------
-loc_2819E2:                             ; CODE XREF: ROM:002802AE   p
+Fade_Music:                             ; CODE XREF: ROM:002802AE   p
                 move    sr,-(sp)
                 ori     #$700,sr
                 move.w  #$100,($A11100).l
@@ -2281,7 +2281,7 @@ loc_2819F0:                             ; CODE XREF: ROM:00281A08   j
                 move    (sp)+,sr
                 rts
 ; ---------------------------------------------------------------------------
-loc_281A2E:                             ; CODE XREF: ROM:loc_282C16   p
+Music_Stop:                             ; CODE XREF: ROM:loc_282C16   p
                 move    sr,-(sp)
                 ori     #$700,sr
                 move.w  #$100,($A11100).l
@@ -2914,7 +2914,7 @@ loc_2820BA:
                 cmp.w   d3,d4
                 ble.s   loc_28210A
                 andi.l  #$FFFE0000,d2
-                addi.l  #(S2_ErrorTrap+$1FE00),d2
+                addi.l  #(S2_Data+$1FE00),d2
                 movem.l d2,-(sp)
                 sub.l   d1,d2
                 move.l  d5,d7
@@ -4114,7 +4114,7 @@ loc_282C06:                             ; CODE XREF: ROM:SC_GameMenu   p
                 rts
 ; ---------------------------------------------------------------------------
 loc_282C16:                             ; CODE XREF: ROM:loc_282C06   p
-                jsr     (loc_281A2E).l
+                jsr     (Music_Stop).l
                 jsr     (loc_280830).l
                 ori.w   #3,($FFF116).l
                 jsr     (loc_280876).l
@@ -4246,7 +4246,7 @@ loc_283160:                             ; CODE XREF: ROM:00283162   j
                 dbf     d7,loc_283160
                 jsr     (loc_280876).l
                 lea     (byte_281550).l,a6
-                move.l  #(Puyo_Vector_Table+$2F),d7
+                move.l  #(Puyo_Data+$2F),d7
                 jsr     (loc_281426).l
                 move.w  ($FF4FF0).l,d1
 loc_283184:                             ; CODE XREF: ROM:002831B4   j
@@ -4267,7 +4267,7 @@ loc_2831A8:                             ; CODE XREF: ROM:00283198   j
                 dbf     d1,loc_283184
 loc_2831B8:                             ; CODE XREF: ROM:002831AE   j
                 lea     (byte_2814D0).l,a6
-                move.l  #(Puyo_Vector_Table+$2F),d7
+                move.l  #(Puyo_Data+$2F),d7
                 jsr     (loc_281426).l
 loc_2831CA:                             ; CODE XREF: ROM:002831F6   j
                 jsr     (loc_280B80).l
@@ -4326,7 +4326,7 @@ loc_283276:                             ; CODE XREF: ROM:00283278   j
                 move.l  (a6)+,(a5)+
                 dbf     d7,loc_283276
                 lea     (byte_281550).l,a6
-                move.l  #(Puyo_Vector_Table+$2F),d7
+                move.l  #(Puyo_Data+$2F),d7
                 jsr     (loc_281426).l
                 move.w  ($FF4FF0).l,d1
 loc_283294:                             ; CODE XREF: ROM:002832D2   j
@@ -4350,7 +4350,7 @@ loc_2832C6:                             ; CODE XREF: ROM:002832B6   j
                 dbf     d1,loc_283294
 loc_2832D6:                             ; CODE XREF: ROM:002832CC   j
                 lea     (byte_2814D0).l,a6
-                move.l  #(Puyo_Vector_Table+$2F),d7
+                move.l  #(Puyo_Data+$2F),d7
                 jsr     (loc_281426).l
 loc_2832E8:                             ; CODE XREF: ROM:0028331E   j
                 jsr     (loc_280B80).l
@@ -4438,7 +4438,7 @@ loc_2833D6:                             ; CODE XREF: ROM:002833D2   j
                 move.w  d1,($FF4FF2).l
                 movem.l d0-d7/a0-a6,-(sp)
                 lea     (byte_281550).l,a6
-                move.l  #(Puyo_Vector_Table+$2F),d7
+                move.l  #(Puyo_Data+$2F),d7
                 jsr     (loc_281426).l
                 move.w  ($FF4FF0).l,d1
 loc_2833F8:                             ; CODE XREF: ROM:00283436   j
@@ -4462,7 +4462,7 @@ loc_28342A:                             ; CODE XREF: ROM:0028341A   j
                 dbf     d1,loc_2833F8
 loc_28343A:                             ; CODE XREF: ROM:00283430   j
                 lea     ($FF4F70).l,a6
-                move.l  #(Puyo_Vector_Table+$2F),d7
+                move.l  #(Puyo_Data+$2F),d7
                 jsr     (loc_281426).l
 loc_28344C:                             ; CODE XREF: ROM:00283482   j
                 jsr     (loc_280B80).l
