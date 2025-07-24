@@ -92,11 +92,11 @@ aCSega1997Jan:  dc.b '(C)SEGA 1997.Jan'
 aSonicCompilati:dc.b 'SONIC COMPILATION                               '
 aSonicCompilati_0:dc.b 'SONIC COMPILATION                               '
 aGmMk119001:    dc.b 'GM MK-1190 -01'
-Checksum:       dc.w $795A              ; DATA XREF: ROM:SC_CheckSumCheck   r
-                                        ; ROM:0028071E   r
+Checksum:       dc.w $795A              ; DATA XREF: SC_CheckSumCheck   r
+                                        ; SC_CheckSumCheck+28   r
 Peripherials:   dc.b 'J               '
 RomStart:       dc.l 0
-Rom_End:        dc.l $2FFFFF            ; DATA XREF: ROM:002806FC   r
+Rom_End:        dc.l $2FFFFF            ; DATA XREF: SC_CheckSumCheck+6   r
 RamStart:       dc.l $FF0000
 RamEnd:         dc.l $FFFFFF
 SramCode:       dc.b $20, $20, $20, $20, $20, $20, $20, $20, $20, $20
@@ -111,12 +111,13 @@ Puyo_Data:      incbin "SC/Puyo_Data.bin"
                 even
 S1_Data:        incbin "SC/S1_Data.bin"
                 even
-; ---------------------------------------------------------------------------
+
+
 SC_EntryPoint:
                 tst.l   ($A10008).l
                 bne.s   loc_28000E
                 tst.w   ($A1000C).l
-loc_28000E:                             ; CODE XREF: ROM:00280006   j
+loc_28000E:                             ; CODE XREF: SC_EntryPoint+6   j
                 bne.s   loc_28008C
                 lea     SetupValues(pc),a5
                 movem.w (a5)+,d5-d7
@@ -125,13 +126,13 @@ loc_28000E:                             ; CODE XREF: ROM:00280006   j
                 andi.b  #$F,d0
                 beq.s   loc_28002E
                 move.l  #'SEGA',$2F00(a1)
-loc_28002E:                             ; CODE XREF: ROM:00280024   j
+loc_28002E:                             ; CODE XREF: SC_EntryPoint+24   j
                 move.w  (a4),d0
                 moveq   #0,d0
                 movea.l d0,a6
                 move.l  a6,usp
                 moveq   #$17,d1
-loc_280038:                             ; CODE XREF: ROM:0028003E   j
+loc_280038:                             ; CODE XREF: SC_EntryPoint+3E   j
                 move.b  (a5)+,d5
                 move.w  d5,(a4)
                 add.w   d7,d5
@@ -140,41 +141,41 @@ loc_280038:                             ; CODE XREF: ROM:0028003E   j
                 move.w  d0,(a3)
                 move.w  d7,(a1)
                 move.w  d7,(a2)
-loc_28004A:                             ; CODE XREF: ROM:0028004C   j
+loc_28004A:                             ; CODE XREF: SC_EntryPoint+4C   j
                 btst    d0,(a1)
                 bne.s   loc_28004A
                 moveq   #$25,d2 ; '%'
-loc_280050:                             ; CODE XREF: ROM:00280052   j
+loc_280050:                             ; CODE XREF: SC_EntryPoint+52   j
                 move.b  (a5)+,(a0)+
                 dbf     d2,loc_280050
                 move.w  d0,(a2)
                 move.w  d0,(a1)
                 move.w  d7,(a2)
-loc_28005C:                             ; CODE XREF: ROM:0028005E   j
+loc_28005C:                             ; CODE XREF: SC_EntryPoint+5E   j
                 move.l  d0,-(a6)
                 dbf     d6,loc_28005C
                 move.l  (a5)+,(a4)
                 move.l  (a5)+,(a4)
                 moveq   #$1F,d3
-loc_280068:                             ; CODE XREF: ROM:0028006A   j
+loc_280068:                             ; CODE XREF: SC_EntryPoint+6A   j
                 move.l  d0,(a3)
                 dbf     d3,loc_280068
                 move.l  (a5)+,(a4)
                 moveq   #$13,d4
-loc_280072:                             ; CODE XREF: ROM:00280074   j
+loc_280072:                             ; CODE XREF: SC_EntryPoint+74   j
                 move.l  d0,(a3)
                 dbf     d4,loc_280072
                 moveq   #3,d5
-loc_28007A:                             ; CODE XREF: ROM:0028007E   j
+loc_28007A:                             ; CODE XREF: SC_EntryPoint+7E   j
                 move.b  (a5)+,$11(a3)
                 dbf     d5,loc_28007A
                 move.w  d0,(a2)
                 movem.l (a6),d0-d7/a0-a6
                 move    #$2700,sr
-loc_28008C:                             ; CODE XREF: ROM:loc_28000E   j
+loc_28008C:                             ; CODE XREF: SC_EntryPoint:loc_28000E   j
                 bra.s   SC_GameProgram
 ; ---------------------------------------------------------------------------
-SetupValues:    dc.w $8000              ; DATA XREF: ROM:00280010   o
+SetupValues:    dc.w $8000              ; DATA XREF: SC_EntryPoint+10   o
                 dc.w $3FFF
                 dc.w $100
                 dc.l $A00000
@@ -254,20 +255,20 @@ SetupValues:    dc.w $8000              ; DATA XREF: ROM:00280010   o
                 dc.l $40000010
 PSG_Data:       dc.b $9F, $BF, $DF, $FF
 ; ---------------------------------------------------------------------------
-SC_GameProgram:                         ; CODE XREF: ROM:loc_28008C   j
+SC_GameProgram:                         ; CODE XREF: SC_EntryPoint:loc_28008C   j
                 tst.w   ($C00004).l
-loc_280100:                             ; CODE XREF: ROM:00280108   j
+loc_280100:                             ; CODE XREF: SC_EntryPoint+108   j
                 btst    #1,($C00005).l
                 bne.s   loc_280100
                 cmpi.l  #'SEGA',($FFFFE4).l
                 bne.s   loc_28011C
                 jmp     $FFFFE8
 ; ---------------------------------------------------------------------------
-loc_28011C:                             ; CODE XREF: ROM:00280114   j
+loc_28011C:                             ; CODE XREF: SC_EntryPoint+114   j
                 lea     ($FF0000).l,a6
                 moveq   #0,d6
                 move.w  #$3FFF,d7
-loc_280128:                             ; CODE XREF: ROM:0028012A   j
+loc_280128:                             ; CODE XREF: SC_EntryPoint+12A   j
                 move.l  d6,(a6)+
                 dbf     d7,loc_280128
                 jsr     (loc_2818DE).l
@@ -277,9 +278,11 @@ loc_280128:                             ; CODE XREF: ROM:0028012A   j
                 jsr     (SC_CheckSumCheck).l
                 jsr     (loc_28073A).l
                 jmp     $FFFFE8
-; ---------------------------------------------------------------------------
-SC_LoaderMain:                          ; CODE XREF: ROM:00280140   p
-                                        ; ROM:002802C0   p
+; End of function SC_EntryPoint
+
+
+SC_LoaderMain:                          ; CODE XREF: SC_EntryPoint+140   p
+                                        ; SC_GameMenu+C4   p
                 ori     #$700,sr
                 move.w  ($FFFFE0).l,d0
                 add.w   d0,d0
@@ -294,8 +297,9 @@ SC_LoaderMain:                          ; CODE XREF: ROM:00280140   p
                 move.l  (a0)+,(a1)+
                 move.l  (a0),(a1)
                 rts
+; End of function SC_LoaderMain
 ; ---------------------------------------------------------------------------
-Game_Index:     dc.l Load_SC_Menu       ; DATA XREF: ROM:00280164   o
+Game_Index:     dc.l Load_SC_Menu       ; DATA XREF: SC_LoaderMain+E   o
                 dc.l Load_S1
                 dc.l Load_S2
                 dc.l Load_Puyo
@@ -334,7 +338,8 @@ Load_S2:
                 jmp     (S2_Data+$D1C).l ; S2_H_Int
 ; ---------------------------------------------------------------------------
                 jmp     (S2_Data+$1CE).l ; S2_V_Int
-; ---------------------------------------------------------------------------
+
+
 SC_GameMenu:                            ; CODE XREF: ROM:002801A2   j
                 jsr     (loc_282C06).l
                 ori     #$700,sr
@@ -359,7 +364,7 @@ SC_GameMenu:                            ; CODE XREF: ROM:002801A2   j
                 lea     (byte_286652).l,a6
                 moveq   #$3F,d7 ; '?'
                 jsr     (loc_2813F4).l
-loc_280288:                             ; CODE XREF: ROM:0028029A   j
+loc_280288:                             ; CODE XREF: SC_GameMenu+9E   j
                 jsr     (loc_280446).l
                 bsr.s   loc_2802CA
                 bsr.s   loc_2802FE
@@ -374,8 +379,9 @@ loc_280288:                             ; CODE XREF: ROM:0028029A   j
                 addq.w  #1,($FFFFE0).l
                 bsr.w   SC_LoaderMain
                 jmp     $FFFFE8
+; End of function SC_GameMenu
 ; ---------------------------------------------------------------------------
-loc_2802CA:                             ; CODE XREF: ROM:0028028E   p
+loc_2802CA:                             ; CODE XREF: SC_GameMenu+92   p
                 btst    #2,($FFF13C).l  ; If Left Button Pressed?
                 beq.s   locret_2802FC   ; If Not
                 move.w  #$45,d7 ; 'E'   ; Play SC_Menu_Bip_Sound
@@ -392,7 +398,7 @@ loc_2802F2:                             ; CODE XREF: ROM:002802EE   j
 locret_2802FC:                          ; CODE XREF: ROM:002802D2   j
                 rts
 ; ---------------------------------------------------------------------------
-loc_2802FE:                             ; CODE XREF: ROM:00280290   p
+loc_2802FE:                             ; CODE XREF: SC_GameMenu+94   p
                 btst    #3,($FFF13C).l  ; If Right Button Pressed?
                 beq.s   locret_28032C   ; If Not
                 move.w  #$45,d7 ; 'E'   ; Play SC_Menu_Bip_Sound
@@ -505,7 +511,7 @@ loc_28042A:                             ; CODE XREF: ROM:00280440   j
                 dbf     d0,loc_28042A
                 rts
 ; ---------------------------------------------------------------------------
-loc_280446:                             ; CODE XREF: ROM:loc_280288   p
+loc_280446:                             ; CODE XREF: SC_GameMenu:loc_280288   p
                                         ; ROM:002803CA   p ...
                 movem.l d0-d7/a0-a6,-(sp)
                 jsr     (loc_28146E).l
@@ -573,8 +579,9 @@ byte_2804F6:    incbin "SC/Misc/Unk_2804F6.bin"
 byte_2804FA:    incbin "SC/Misc/Unk_2804FA.bin"
                                         ; DATA XREF: ROM:002804BA   r
                 even
-; ---------------------------------------------------------------------------
-Load_Menu_Text:                         ; CODE XREF: ROM:00280262   p
+
+
+Load_Menu_Text:                         ; CODE XREF: SC_GameMenu+66   p
                                         ; ROM:002802F8   p ...
                 move.w  ($FFFFE0).l,d7
                 add.w   d7,d7
@@ -586,8 +593,9 @@ Load_Menu_Text:                         ; CODE XREF: ROM:00280262   p
                 move.w  #$15,d7
                 jsr     (loc_280A92).l
                 rts
+; End of function Load_Menu_Text
 ; ---------------------------------------------------------------------------
-Menu_Text:      dc.l Sonic1_Text        ; DATA XREF: ROM:00280594   r
+Menu_Text:      dc.l Sonic1_Text        ; DATA XREF: Load_Menu_Text+A   r
                                         ; "  SONIC THE HEDGEHOG  "
                 dc.l Sonic2_Text        ; " SONIC THE HEDGEHOG 2 "
                 dc.l Puyo_Text          ; "    DR.ROBOTNIK'S     "
@@ -597,7 +605,7 @@ Menu_Text:      dc.l Sonic1_Text        ; DATA XREF: ROM:00280594   r
 Puyo_Text:      dc.b '    DR.ROBOTNIK',$27,'S     '
 Sonic1_Text:    dc.b '  SONIC THE HEDGEHOG  '
 Sonic2_Text:    dc.b ' SONIC THE HEDGEHOG 2 '
-word_28060A:    dc.w $AC1C              ; DATA XREF: ROM:00280256   o
+word_28060A:    dc.w $AC1C              ; DATA XREF: SC_GameMenu+5A   o
                 dc.w 2
                 dc.w $23
                 dc.w 0
@@ -607,13 +615,14 @@ aSelectCursor:  dc.b 'SELECT CURSOR - '
 aLeftOrRightBut:dc.b 'LEFT or RIGHT BUTTON                                    '
 aSelectGameStar:dc.b 'SELECT GAME   - START BUTTON        '
 byte_280682:    incbin "SC/Misc/Unk_280682.bin"
-                                        ; DATA XREF: ROM:0028024A   o
+                                        ; DATA XREF: SC_GameMenu+4E   o
                 even
 byte_2806BE:    incbin "SC/Misc/Unk_2806BE.bin"
                                         ; DATA XREF: ROM:00280468   o
                 even
-; ---------------------------------------------------------------------------
-SC_CheckSumCheck:                       ; CODE XREF: ROM:00280144   p
+
+
+SC_CheckSumCheck:                       ; CODE XREF: SC_EntryPoint+144   p
                 tst.w   (Checksum).w
                 beq.s   SC_CheckSumOk
                 move.l  (Rom_End).w,d1
@@ -625,23 +634,24 @@ SC_CheckSumCheck:                       ; CODE XREF: ROM:00280144   p
                 subq.w  #1,d2
                 swap    d1
                 moveq   #0,d0
-SC_CheckSumLoop:                        ; CODE XREF: ROM:00280716   j
-                                        ; ROM:0028071A   j
+SC_CheckSumLoop:                        ; CODE XREF: SC_CheckSumCheck+20   j
+                                        ; SC_CheckSumCheck+24   j
                 add.w   (a0)+,d0
                 dbf     d2,SC_CheckSumLoop
                 dbf     d1,SC_CheckSumLoop
                 cmp.w   (Checksum).w,d0
                 beq.s   SC_CheckSumOk
-SC_CheckSumFail:                        ; CODE XREF: ROM:00280736   j
+SC_CheckSumFail:                        ; CODE XREF: SC_CheckSumCheck+40   j
                 move.l  #$C0000000,($C00004).l
                 move.w  #$E,($C00000).l
                 bra.s   SC_CheckSumFail
 ; ---------------------------------------------------------------------------
-SC_CheckSumOk:                          ; CODE XREF: ROM:002806FA   j
-                                        ; ROM:00280722   j
+SC_CheckSumOk:                          ; CODE XREF: SC_CheckSumCheck+4   j
+                                        ; SC_CheckSumCheck+2C   j
                 rts
+; End of function SC_CheckSumCheck
 ; ---------------------------------------------------------------------------
-loc_28073A:                             ; CODE XREF: ROM:0028014A   p
+loc_28073A:                             ; CODE XREF: SC_EntryPoint+14A   p
                 move.b  ($A10001).l,d7
                 andi.b  #$C0,d7
                 move.b  d7,($FFF18A).l
@@ -674,8 +684,8 @@ aPalAndFrenchSe:dc.b 'PAL AND FRENCH SECAM MEGA DRIVE                           
 aSystems:       dc.b 'SYSTEMS.           '
                 dc.b   0
 ; ---------------------------------------------------------------------------
-loc_280830:                             ; CODE XREF: ROM:00280134   p
-                                        ; ROM:00280206   p ...
+loc_280830:                             ; CODE XREF: SC_EntryPoint+134   p
+                                        ; SC_GameMenu+A   p ...
                 lea     (byte_280850).l,a6
                 lea     ($FFF100).l,a5
                 lea     ($C00004).l,a4
@@ -759,7 +769,7 @@ loc_280924:                             ; CODE XREF: ROM:0028089C   p
                 move.w  #$1FFF,d7
                 bra.w   loc_281D9E
 ; ---------------------------------------------------------------------------
-loc_280932:                             ; CODE XREF: ROM:0028026A   p
+loc_280932:                             ; CODE XREF: SC_GameMenu+6E   p
                                         ; ROM:0028077A   p ...
                 bsr.w   loc_280B9C
                 bset    #6,($FFF103).l
@@ -836,7 +846,7 @@ loc_2809CA:                             ; CODE XREF: ROM:002809CC   j
                 movem.l (sp)+,a5
                 rts
 ; ---------------------------------------------------------------------------
-loc_2809E0:                             ; CODE XREF: ROM:00280250   p
+loc_2809E0:                             ; CODE XREF: SC_GameMenu+54   p
                 movem.l a6,-(sp)
                 movem.l d4-d7,-(sp)
 loc_2809E8:                             ; CODE XREF: ROM:002809EE   j
@@ -911,10 +921,10 @@ loc_280A88:                             ; CODE XREF: ROM:00280A82   j
                 movem.l (sp)+,d4-d7
                 rts
 ; ---------------------------------------------------------------------------
-loc_280A8E:                             ; CODE XREF: ROM:0028025C   p
+loc_280A8E:                             ; CODE XREF: SC_GameMenu+60   p
                                         ; ROM:0028076E   p ...
                 bsr.w   loc_28097E
-loc_280A92:                             ; CODE XREF: ROM:002805A8   p
+loc_280A92:                             ; CODE XREF: Load_Menu_Text+1E   p
                 movem.l a5,-(sp)
                 movem.l d1-d3,-(sp)
                 bsr.w   loc_280962
@@ -1031,7 +1041,7 @@ loc_280BB4:                             ; CODE XREF: ROM:00280B62   j
                 ori     #$700,sr
                 rts
 ; ---------------------------------------------------------------------------
-loc_280BC2:                             ; CODE XREF: ROM:002802A8   p
+loc_280BC2:                             ; CODE XREF: SC_GameMenu+AC   p
                                         ; ROM:00280BDA   j ...
                 andi    #$F8FF,sr
                 move.w  #8,($FFEF00).l
@@ -1654,7 +1664,7 @@ loc_2813E0:
                 lea     (byte_281550).l,a6
                 bra.s   loc_2813F2
 ; ---------------------------------------------------------------------------
-loc_2813E8:                             ; CODE XREF: ROM:002802B4   p
+loc_2813E8:                             ; CODE XREF: SC_GameMenu+B8   p
                                         ; ROM:00282C0E   p
                 lea     (byte_2814D0).l,a6
                 bra.w   *+4
@@ -1662,7 +1672,7 @@ loc_2813E8:                             ; CODE XREF: ROM:002802B4   p
 loc_2813F2:                             ; CODE XREF: ROM:002813E6   j
                                         ; ROM:002813EE   j
                 moveq   #$3F,d7 ; '?'
-loc_2813F4:                             ; CODE XREF: ROM:00280282   p
+loc_2813F4:                             ; CODE XREF: SC_GameMenu+86   p
                 bsr.w   loc_281426
 loc_2813F8:                             ; CODE XREF: ROM:00281408   j
                 bsr.w   loc_28146E
@@ -1770,179 +1780,185 @@ byte_281550:    dc.b $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE
                 dc.b $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE
                 dc.b $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE, $E, $EE
                 dc.b $E, $EE, $E, $EE, $E, $EE, $E, $EE
-; ---------------------------------------------------------------------------
-SC_NemDec:                              ; CODE XREF: ROM:0028022E   p
-                                        ; ROM:00280244   p ...
+
+
+SC_NemDec:                              ; CODE XREF: SC_GameMenu+32   p
+                                        ; SC_GameMenu+48   p ...
                 movem.l d0-d7/a0-a1/a3-a5,-(sp)
-                lea     (loc_28169E).l,a3
-                lea     ($C00000).l,a4
-                bra.s   loc_2815F6
+                lea     (SC_NemPCD_WriteRowToVDP).l,a3 ; Write all data to the same location
+                lea     ($C00000).l,a4  ; Specifically, to the VDP data port
+                bra.s   SC_NemDecMain
 ; ---------------------------------------------------------------------------
 loc_2815E2:
                 movem.l d0-d7/a0-a1/a3-a5,-(sp)
                 movea.l (a3)+,a0
                 movea.l (a3),a4
-                bra.s   loc_2815F0
+                bra.s   SC_NemDecToRAM_2
 ; ---------------------------------------------------------------------------
-loc_2815EC:
+SC_NemDecToRAM:
                 movem.l d0-d7/a0-a1/a3-a5,-(sp)
-loc_2815F0:                             ; CODE XREF: ROM:002815EA   j
-                lea     (loc_2816B4).l,a3
-loc_2815F6:                             ; CODE XREF: ROM:002815E0   j
+SC_NemDecToRAM_2:                       ; CODE XREF: SC_NemDec+1A   j
+                lea     (SC_NemPCD_WriteRowToRAM).l,a3 ; Advance to the next location after each write
+SC_NemDecMain:                          ; CODE XREF: SC_NemDec+10   j
                 lea     ($FFF300).l,a1
-                move.w  (a0)+,d2
+                move.w  (a0)+,d2        ; Get number of patterns
                 lsl.w   #1,d2
-                bcc.s   loc_281606
+                bcc.s   loc_281606      ; Branch if the sign bit isn't set
                 lea     $A(a3),a3
-loc_281606:                             ; CODE XREF: ROM:00281600   j
-                lsl.w   #2,d2
-                movea.w d2,a5
-                moveq   #8,d3
+loc_281606:                             ; CODE XREF: SC_NemDec+30   j
+                lsl.w   #2,d2           ; Get number of 8-pixel rows in the uncompressed data
+                movea.w d2,a5           ; And store it in a5 because there aren't any spare data registers
+                moveq   #8,d3           ; 8 pixels in a pattern row
                 moveq   #0,d2
                 moveq   #0,d4
-                bsr.w   loc_2816CA
-                move.b  (a0)+,d5
-                asl.w   #8,d5
-                move.b  (a0)+,d5
-                move.w  #$10,d6
-                bsr.s   loc_281626
+                bsr.w   SC_NemDec_BuildCodeTable
+                move.b  (a0)+,d5        ; Get first byte of compressed data
+                asl.w   #8,d5           ; Shift up by a byte
+                move.b  (a0)+,d5        ; Get second byte of compressed data
+                move.w  #$10,d6         ; Set initial shift value
+                bsr.s   SC_NemDec_ProcessCompressedData
                 movem.l (sp)+,d0-d7/a0-a1/a3-a5
                 rts
-; ---------------------------------------------------------------------------
-loc_281626:                             ; CODE XREF: ROM:0028161E   p
-                                        ; ROM:00281670   j
+; End of function SC_NemDec
+
+
+SC_NemDec_ProcessCompressedData:        ; CODE XREF: SC_NemDec+4E   p
+                                        ; SC_NemDec_ProcessCompressedData+4A   j
                 move.w  d6,d7
-                subq.w  #8,d7
+                subq.w  #8,d7           ; Get shift value
                 move.w  d5,d1
-                lsr.w   d7,d1
-                cmpi.b  #$FC,d1
-                bcc.s   loc_281672
+                lsr.w   d7,d1           ; Shift so that high bit of the code is in bit position 7
+                cmpi.b  #$FC,d1         ; Are the high 6 bits set?
+                bcc.s   SC_NemPCD_InlineData ; If they are, it signifies inline data
                 andi.w  #$FF,d1
                 add.w   d1,d1
-                move.b  (a1,d1.w),d0
+                move.b  (a1,d1.w),d0    ; Get the length of the code in bits
                 ext.w   d0
-                sub.w   d0,d6
-                cmpi.w  #9,d6
-                bcc.s   loc_28164E
+                sub.w   d0,d6           ; Subtract from shift value so that the next code is read next time around
+                cmpi.w  #9,d6           ; Does a new byte need to be read?
+                bcc.s   loc_28164E      ; If not, branch
                 addq.w  #8,d6
                 asl.w   #8,d5
-                move.b  (a0)+,d5
-loc_28164E:                             ; CODE XREF: ROM:00281646   j
+                move.b  (a0)+,d5        ; Read next byte
+loc_28164E:                             ; CODE XREF: SC_NemDec_ProcessCompressedData+20   j
                 move.b  1(a1,d1.w),d1
                 move.w  d1,d0
-                andi.w  #$F,d1
+                andi.w  #$F,d1          ; Get palette index for pixel
                 andi.w  #$F0,d0
-loc_28165C:                             ; CODE XREF: ROM:00281694   j
-                                        ; ROM:0028169C   j
-                lsr.w   #4,d0
-loc_28165E:                             ; CODE XREF: ROM:loc_28166C   j
-                lsl.l   #4,d4
-                or.b    d1,d4
-                subq.w  #1,d3
-                bne.s   loc_28166C
-                jmp     (a3)
+SC_NemPCD_ProcessCompressedData:        ; CODE XREF: SC_NemDec_ProcessCompressedData+6E   j
+                                        ; SC_NemDec_ProcessCompressedData+76   j
+                lsr.w   #4,d0           ; Get repeat count
+SC_NemPCD_WritePixel:                   ; CODE XREF: SC_NemDec_ProcessCompressedData:SC_NemPCD_WritePixel_Loop   j
+                lsl.l   #4,d4           ; Shift up by a nybble
+                or.b    d1,d4           ; Write pixel
+                subq.w  #1,d3           ; Has an entire 8-pixel row been written?
+                bne.s   SC_NemPCD_WritePixel_Loop ; If not, loop
+                jmp     (a3)            ; Otherwise, write the row to its destination, by doing a dynamic jump to SC_NemPCD_WriteRowToVDP, SC_NemDec_WriteAndAdvance, SC_NemPCD_WriteRowToVDP_XOR, or SC_NemDec_WriteAndAdvance_XOR
 ; ---------------------------------------------------------------------------
-loc_281668:                             ; CODE XREF: ROM:002816A4   j
+SC_NemPCD_NewRow:                       ; CODE XREF: ROM:002816A4   j
                                         ; ROM:002816B0   j ...
-                moveq   #0,d4
-                moveq   #8,d3
-loc_28166C:                             ; CODE XREF: ROM:00281664   j
-                dbf     d0,loc_28165E
-                bra.s   loc_281626
+                moveq   #0,d4           ; Reset row
+                moveq   #8,d3           ; Reset nybble counter
+SC_NemPCD_WritePixel_Loop:              ; CODE XREF: SC_NemDec_ProcessCompressedData+3E   j
+                dbf     d0,SC_NemPCD_WritePixel
+                bra.s   SC_NemDec_ProcessCompressedData
 ; ---------------------------------------------------------------------------
-loc_281672:                             ; CODE XREF: ROM:00281632   j
-                subq.w  #6,d6
+SC_NemPCD_InlineData:                   ; CODE XREF: SC_NemDec_ProcessCompressedData+C   j
+                subq.w  #6,d6           ; 6 bits needed to signal inline data
                 cmpi.w  #9,d6
                 bcc.s   loc_281680
                 addq.w  #8,d6
                 asl.w   #8,d5
                 move.b  (a0)+,d5
-loc_281680:                             ; CODE XREF: ROM:00281678   j
-                subq.w  #7,d6
+loc_281680:                             ; CODE XREF: SC_NemDec_ProcessCompressedData+52   j
+                subq.w  #7,d6           ; And 7 bits needed for the inline data itself
                 move.w  d5,d1
-                lsr.w   d6,d1
+                lsr.w   d6,d1           ; Shift so that low bit of the code is in bit position 0
                 move.w  d1,d0
-                andi.w  #$F,d1
-                andi.w  #$70,d0 ; 'p'
+                andi.w  #$F,d1          ; Get palette index for pixel
+                andi.w  #$70,d0 ; 'p'   ; High nybble is repeat count for pixel
                 cmpi.w  #9,d6
-                bcc.s   loc_28165C
+                bcc.s   SC_NemPCD_ProcessCompressedData
                 addq.w  #8,d6
                 asl.w   #8,d5
                 move.b  (a0)+,d5
-                bra.s   loc_28165C
+                bra.s   SC_NemPCD_ProcessCompressedData
+; End of function SC_NemDec_ProcessCompressedData
 ; ---------------------------------------------------------------------------
-loc_28169E:                             ; DATA XREF: ROM:002815D4   o
-                move.l  d4,(a4)
+SC_NemPCD_WriteRowToVDP:                ; DATA XREF: SC_NemDec+4   o
+                move.l  d4,(a4)         ; Write 8-pixel row
                 subq.w  #1,a5
-                move.w  a5,d4
-                bne.s   loc_281668
-                rts
+                move.w  a5,d4           ; Have all the 8-pixel rows been written?
+                bne.s   SC_NemPCD_NewRow ; If not, branch
+                rts                     ; Otherwise the decompression is finished
 ; ---------------------------------------------------------------------------
-loc_2816A8:
+SC_NemPCD_WriteRowToVDP_XOR:            ; XOR the previous row by the current row
                 eor.l   d4,d2
-                move.l  d2,(a4)
+                move.l  d2,(a4)         ; And write the result
                 subq.w  #1,a5
                 move.w  a5,d4
-                bne.s   loc_281668
+                bne.s   SC_NemPCD_NewRow
                 rts
 ; ---------------------------------------------------------------------------
-loc_2816B4:                             ; DATA XREF: ROM:loc_2815F0   o
+SC_NemPCD_WriteRowToRAM:                ; DATA XREF: SC_NemDec:SC_NemDecToRAM_2   o
                 move.l  d4,(a4)+
                 subq.w  #1,a5
                 move.w  a5,d4
-                bne.s   loc_281668
+                bne.s   SC_NemPCD_NewRow
                 rts
 ; ---------------------------------------------------------------------------
-loc_2816BE:
+SC_NemPCD_WriteRowToRAM_XOR:
                 eor.l   d4,d2
                 move.l  d2,(a4)+
                 subq.w  #1,a5
                 move.w  a5,d4
-                bne.s   loc_281668
+                bne.s   SC_NemPCD_NewRow
                 rts
-; ---------------------------------------------------------------------------
-loc_2816CA:                             ; CODE XREF: ROM:00281610   p
+
+
+SC_NemDec_BuildCodeTable:               ; CODE XREF: SC_NemDec+40   p
                 move.b  (a0)+,d0
-loc_2816CC:                             ; CODE XREF: ROM:002816DC   j
-                cmpi.b  #$FF,d0
-                bne.s   loc_2816D4
-                rts
+SC_NemBCT_ChkEnd:                       ; CODE XREF: SC_NemDec_BuildCodeTable+12   j
+                cmpi.b  #$FF,d0         ; Has the end of the code table description been reached?
+                bne.s   SC_NemBCT_NewPALIndex ; If not, branch
+                rts                     ; Otherwise, this subroutine's work is done
 ; ---------------------------------------------------------------------------
-loc_2816D4:                             ; CODE XREF: ROM:002816D0   j
+SC_NemBCT_NewPALIndex:                  ; CODE XREF: SC_NemDec_BuildCodeTable+6   j
                 move.w  d0,d7
-loc_2816D6:                             ; CODE XREF: ROM:00281702   j
-                                        ; ROM:0028171A   j
-                move.b  (a0)+,d0
-                cmpi.b  #$80,d0
-                bcc.s   loc_2816CC
+SC_NemBCT_Loop:                         ; CODE XREF: SC_NemDec_BuildCodeTable+38   j
+                                        ; SC_NemDec_BuildCodeTable+50   j
+                move.b  (a0)+,d0        ; Read next byte
+                cmpi.b  #$80,d0         ; Sign bit being set signifies a new palette index
+                bcc.s   SC_NemBCT_ChkEnd ; A bmi could have been used instead of a compare and bcc
                 move.b  d0,d1
-                andi.w  #$F,d7
-                andi.w  #$70,d1 ; 'p'
-                or.w    d1,d7
-                andi.w  #$F,d0
+                andi.w  #$F,d7          ; Get palette index
+                andi.w  #$70,d1 ; 'p'   ; Get repeat count for palette index
+                or.w    d1,d7           ; Combine the two
+                andi.w  #$F,d0          ; Get the length of the code in bits
                 move.b  d0,d1
                 lsl.w   #8,d1
-                or.w    d1,d7
+                or.w    d1,d7           ; Combine with palette index and repeat count to form code table entry
                 moveq   #8,d1
-                sub.w   d0,d1
-                bne.s   loc_281704
-                move.b  (a0)+,d0
-                add.w   d0,d0
-                move.w  d7,(a1,d0.w)
-                bra.s   loc_2816D6
+                sub.w   d0,d1           ; Is the code 8 bits long?
+                bne.s   SC_NemBCT_ShortCode ; If not, a bit of extra processing is needed
+                move.b  (a0)+,d0        ; Get code
+                add.w   d0,d0           ; Each code gets a word-sized entry in the table
+                move.w  d7,(a1,d0.w)    ; Store the entry for the code
+                bra.s   SC_NemBCT_Loop  ; Repeat
 ; ---------------------------------------------------------------------------
-loc_281704:                             ; CODE XREF: ROM:002816F8   j
-                move.b  (a0)+,d0
-                lsl.w   d1,d0
-                add.w   d0,d0
+SC_NemBCT_ShortCode:                    ; CODE XREF: SC_NemDec_BuildCodeTable+2E   j
+                move.b  (a0)+,d0        ; Get code
+                lsl.w   d1,d0           ; Get index into code table
+                add.w   d0,d0           ; Shift so that high bit is in bit position 7
                 moveq   #1,d5
                 lsl.w   d1,d5
-                subq.w  #1,d5
-loc_281710:                             ; CODE XREF: ROM:00281716   j
-                move.w  d7,(a1,d0.w)
-                addq.w  #2,d0
-                dbf     d5,loc_281710
-                bra.s   loc_2816D6
+                subq.w  #1,d5           ; d5 = 2^d1 - 1
+SC_NemBCT_ShortCode_Loop:               ; CODE XREF: SC_NemDec_BuildCodeTable+4C   j
+                move.w  d7,(a1,d0.w)    ; Store entry
+                addq.w  #2,d0           ; Increment index
+                dbf     d5,SC_NemBCT_ShortCode_Loop ; Repeat for required number of entries
+                bra.s   SC_NemBCT_Loop
+; End of function SC_NemDec_BuildCodeTable
 ; ---------------------------------------------------------------------------
 loc_28171C:                             ; CODE XREF: ROM:00282C64   p
                 movem.l d0-d7/a1-a5,-(sp)
@@ -2175,7 +2191,7 @@ loc_2818C0:                             ; CODE XREF: ROM:002818B8   j
                 move.l  d6,($FFF000).l
                 rts
 ; ---------------------------------------------------------------------------
-loc_2818DE:                             ; CODE XREF: ROM:0028012E   p
+loc_2818DE:                             ; CODE XREF: SC_EntryPoint+12E   p
                 lea     ($A11100).l,a4
                 move.w  #$100,(a4)
                 move.w  #$100,$100(a4)
@@ -2230,8 +2246,8 @@ loc_281954:                             ; CODE XREF: ROM:00281956   j
                 move.w  #$100,$100(a4)
                 rts
 ; ---------------------------------------------------------------------------
-SC_PlaySound:                           ; CODE XREF: ROM:00280274   p
-                                        ; ROM:002802A0   p ...
+SC_PlaySound:                           ; CODE XREF: SC_GameMenu+78   p
+                                        ; SC_GameMenu+A4   p ...
                 move    sr,-(sp)
                 ori     #$700,sr
                 move.w  #$100,($A11100).l
@@ -2256,7 +2272,7 @@ loc_2819A6:                             ; CODE XREF: ROM:002819BE   j
                 move    (sp)+,sr
                 rts
 ; ---------------------------------------------------------------------------
-Fade_Music:                             ; CODE XREF: ROM:002802AE   p
+Fade_Music:                             ; CODE XREF: SC_GameMenu+B2   p
                 move    sr,-(sp)
                 ori     #$700,sr
                 move.w  #$100,($A11100).l
@@ -3034,7 +3050,7 @@ byte_2821DE:    dc.b 0, 3, $30, $33, 0, 1, $10, $11, 0, 2, $20, $22, 0
                 dc.b $E1, $EE, $11, $1F, $F1, $FF, $FF, $F2, $2F, $22
                 dc.b $FF, $F3, $3F, $33, $FF, $FE, $EF, $EE
 ; ---------------------------------------------------------------------------
-loc_282262:                             ; CODE XREF: ROM:0028013A   p
+loc_282262:                             ; CODE XREF: SC_EntryPoint+13A   p
                 moveq   #$40,d7 ; '@'
                 move.b  d7,($A10009).l
                 move.b  d7,($A1000B).l
@@ -4107,7 +4123,7 @@ loc_282C00:                             ; CODE XREF: ROM:00282BFA   j
                 movem.l (sp)+,a5-a6
                 rts
 ; ---------------------------------------------------------------------------
-loc_282C06:                             ; CODE XREF: ROM:SC_GameMenu   p
+loc_282C06:                             ; CODE XREF: SC_GameMenu   p
                 bsr.w   loc_282C16
                 bsr.w   loc_282C5E
                 jsr     (loc_2813E8).l
@@ -4864,7 +4880,7 @@ loc_2837D4:                             ; CODE XREF: ROM:002837D0   j
                 rts
 ; ---------------------------------------------------------------------------
 SC_Font:        incbin "SC/Art/Nem/SC_Font.nem"
-                                        ; DATA XREF: ROM:00280234   o
+                                        ; DATA XREF: SC_GameMenu+38   o
                                         ; ROM:loc_28271C   o
                 even
 SC_Font_Unused: incbin "SC/Art/Nem/SC_Font_Unused.nem"
@@ -4876,7 +4892,7 @@ Unused_Font:    incbin "SC/Art/Unc/Unused_Font.unc"
                                         ; DATA XREF: ROM:loc_28274A   o
                 even
 byte_286652:    dc.b 6, 0, 0, 0, 0, $EE, $A, 0, $E, $40, $E, $60, 0, $66
-                                        ; DATA XREF: ROM:0028027A   o
+                                        ; DATA XREF: SC_GameMenu+7E   o
                 dc.b 6, $66, 6, $66, $E, 0, 0, $E, $E, $E, 2, 0, 4, 0
                 dc.b $E, $88, $E, $EE, 3, $33, 3, $32, 3, $22, 4, $34
                 dc.b 5, $45, 7, $66, 0, 3, 0, 5, 2, $25, 1, $35, 0, $56
@@ -5004,7 +5020,7 @@ byte_286B46:    dc.b 0, 0, 1, $68, 1, $69, 1, $6A, 1, $6B, 1, $6B, 1, $6B
                 dc.b $FD, 1, $FE, 1, $FF, 2, 0, 2, 1, 2, 2, 2, 3, 2, 4
                 dc.b 2, 5, 0, 0
 SC_GameSelect:  incbin "SC/Art/Nem/SC_GameSelect.nem"
-                                        ; DATA XREF: ROM:0028021E   o
+                                        ; DATA XREF: SC_GameMenu+22   o
 byte_287E2A:    incbin "SC/Misc/Unk_287E2A.bin"
                 even
 Padding:        dc.l $FFFFFFFF
